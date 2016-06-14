@@ -20,4 +20,7 @@ before_script:
   - ./scripts/bootNsq.sh
 install:
   - npm install
-
+script:
+  - npm run coverage
+after_success:
+  - npm run coveralls

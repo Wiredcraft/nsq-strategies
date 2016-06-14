@@ -6,7 +6,9 @@
   "scripts": {
     "pretest": "npm run jscs-fix && jshint lib",
     "jscs-fix": "jscs lib --fix",
-    "test": "mocha test/*.test.js"
+    "test": "mocha test/*.test.js",
+    "coverage": "istanbul cover _mocha -- test/*.test.js && istanbul check-coverage",
+    "coveralls": "cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   },
   "repository": {
     "type": "git",
@@ -15,7 +17,7 @@
   "keywords": [
     "nsq"
   ],
-  "author": "",
+  "author": "Wiredcraft",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Wiredcraft/nsq-strategies/issues"
@@ -30,6 +32,8 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
+    "coveralls": "^2.11.9",
+    "istanbul": "^0.4.3",
     "jscs": "^3.0.4",
     "jshint": "^2.9.2",
     "mocha": "^2.5.3",
