@@ -3,19 +3,27 @@
 const should = require('chai').should();
 const request = require('request');
 const spawn = require('child_process').spawn;
+const randexp = require('randexp').randexp;
 
 const Consumer = require('../index').Consumer;
 const Producer = require('../index').Producer;
 
-const removeTopic = (topic, nsqd, cb) => {
+const removeTopicFromAllNsqd = (topic, cb) => {
   cb = cb || function() {};
-  const option = {
-    uri: `http://${nsqd}/topic/delete?topic=${topic}`,
-    method: 'POST'
-  };
-  request(option, (e, res, body) => {
-    cb(e);
+  const nsqd = ['127.0.0.1:9041', '127.0.0.1:9042'];
+  removeSingle(nsqd[0], () => {
+    removeSingle(nsqd[1], cb);
   });
+
+  function removeSingle(host, callback) {
+    const option = {
+      uri: `http://${host}/topic/delete?topic=${topic}`,
+      method: 'POST'
+    };
+    request(option, (e, res, body) => {
+      callback(e);
+    });
+  }
 };
 
 const runOnce = (callback) => {
@@ -46,28 +54,25 @@ describe('msg queue', () => {
       });
     };
 
-    after('delete topic', (done) => {
-      removeTopic('lorem', '127.0.0.1:9042');
-      removeTopic('dolor', '127.0.0.1:9042', done);
-    });
-
     it('should receive message successfully', (done) => {
-      send('lorem', 'hello nsq', () => {
-        const c = new Consumer('lorem', 'ipsum', {
+      const topic = randexp(/Consume-([a-z]{8})/);
+      send(topic, 'hello nsq', () => {
+        const c = new Consumer(topic, 'ipsum', {
             lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
           });
         c.consume((msg) => {
           msg.body.toString().should.be.equal('hello nsq');
           msg.finish();
-          done();
+          removeTopicFromAllNsqd(topic, done);
         });
       });
     });
 
     it('should be able to requeu message', function(done) {
       this.timeout(5000);
-      send('dolor', 'test requeue', () => {
-        const c = new Consumer('dolor', 'sit', {
+      const topic = randexp(/Consume-([a-z]{8})/);
+      send(topic, 'test requeue', () => {
+        const c = new Consumer(topic, 'sit', {
           lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
         });
         let n = 0;
@@ -89,45 +94,45 @@ describe('msg queue', () => {
 
   describe('producer', function() {
     this.timeout(5000);
-    after('delete topic', (done) => {
-      removeTopic('amet', '127.0.0.1:9041');
-      removeTopic('amet', '127.0.0.1:9042', done);
-    });
 
     it('should be able to publish to single nsqd', function(done) {
+      const topic = randexp(/Single-([a-z]{8})/);
       const p = new Producer({
         nsqdHost: '127.0.0.1',
         tcpPort: 9031
       });
       p.connect(() => {
-        p.produce('amet', 'test producer', (err) => {
+        p.produce(topic, 'test producer', (err) => {
           if (err) return done(err);
           const nsqTail = spawn('nsq_tail', ['--lookupd-http-address=127.0.0.1:9011',
-              '--topic=amet', '-n', '1']);
+              `--topic=${topic}`, '-n', '1']);
           nsqTail.stdout.on('data', (data) => {
-            data.toString().should.be.equal('test producer\n');
+            data.toString().should.contain('test producer');
           });
           nsqTail.on('close', (code) => {
-            done(code);
+            removeTopicFromAllNsqd(topic, done);
           });
         });
       });
     });
 
     it('should be able to publish to lookup', function(done) {
+      const topic = randexp(/Lookup-([a-z]{8})/);
       const p = new Producer({
         lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
       });
       p.connect(() => {
-        p.produce('amet', 'test producer', (err) => {
+        p.produce(topic, 'test lookup', (err) => {
           if (err) return done(err);
           const nsqTail = spawn('nsq_tail', ['--lookupd-http-address=127.0.0.1:9011',
-              '--topic=amet', '-n', '1']);
+              `--topic=${topic}`, '-n', '1']);
           nsqTail.stdout.on('data', (data) => {
-            data.toString().should.be.equal('test producer\n');
+            if (data.toString().trim()) {//need remove \n
+              data.toString().should.contain('test lookup');
+            }
           });
           nsqTail.on('close', (code) => {
-            done(code);
+            removeTopicFromAllNsqd(topic, done);
           });
         });
       });
@@ -144,25 +149,32 @@ describe('msg queue', () => {
     });
 
     it('should be able to play round robin', function(done) {
+      const topic = randexp(/Roundrobin-([a-z]{8})/);
       const p = new Producer({
         lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
       });
-      const doneOnce = runOnce(done);
+      const doneOnce = runOnce(() => {
+        removeTopicFromAllNsqd(topic, done);
+      });
       p.connect(() => {
-        p.produce('amet', 'round1', (err) => {});
-        p.produce('amet', 'round2', (err) => {});
+        p.produce(topic, 'round1', (err) => {});
+        p.produce(topic, 'round2', (err) => {});
         spawn('nsq_tail', ['--nsqd-tcp-address=127.0.0.1:9031',
-            '--topic=amet', '-n', '1'])
+            `--topic=${topic}`, '-n', '1'])
           .stdout.on('data', (data) => {
-            data.toString().should.contain('round');
+            if (data.toString().trim()) {//need remove \n
+              data.toString().trim().should.contain('round');
+            }
           })
           .on('close', (code) => {
             doneOnce(code);
           });
         spawn('nsq_tail', ['--nsqd-tcp-address=127.0.0.1:9032',
-            '--topic=amet', '-n', '1'])
+            `--topic=${topic}`, '-n', '1'])
           .stdout.on('data', (data) => {
-            data.toString().should.contain('round');
+            if (data.toString().trim()) {//need remove \n
+              data.toString().trim().should.contain('round');
+            }
           })
           .on('close', (code) => {
             doneOnce(code);
@@ -171,24 +183,31 @@ describe('msg queue', () => {
     });
 
     it('should be able to play fanout', function(done) {
+      const topic = randexp(/Roundrobin-([a-z]{8})/);
       const p = new Producer({
         lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
       }, { strategy: Producer.FAN_OUT });
-      const doneOnce = runOnce(done);
+      const doneOnce = runOnce(() => {
+        removeTopicFromAllNsqd(topic, done);
+      });
       p.connect(() => {
-        p.produce('amet', 'fanout message', (err) => {});
+        p.produce(topic, 'fanout message', (err) => {});
         spawn('nsq_tail', ['--nsqd-tcp-address=127.0.0.1:9031',
-            '--topic=amet', '-n', '1'])
+            `--topic=${topic}`, '-n', '1'])
           .stdout.on('data', (data) => {
-            data.toString().should.contain('fanout message');
+            if (data.toString().trim()) {//need remove \n
+              data.toString().should.contain('fanout message');
+            }
           })
           .on('close', (code) => {
             doneOnce(code);
           });
         spawn('nsq_tail', ['--nsqd-tcp-address=127.0.0.1:9032',
-            '--topic=amet', '-n', '1'])
+            `--topic=${topic}`, '-n', '1'])
           .stdout.on('data', (data) => {
-            data.toString().should.contain('fanout message');
+            if (data.toString().trim()) {//need remove \n
+              data.toString().should.contain('fanout message');
+            }
           })
           .on('close', (code) => {
             doneOnce(code);

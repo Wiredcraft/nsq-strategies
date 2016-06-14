@@ -5,6 +5,16 @@ cache:
     - node_modules
 notifications:
   email: false
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
+env:
+  global:
+    - CXX=g++-4.8 
+    - NSQ_DOWNLOAD=nsq-0.3.6.linux-amd64.go1.5.1
 node_js:
   - "5"
   - "4"
@@ -16,3 +26,7 @@ before_script:
   - ./scripts/bootNsq.sh
 install:
   - npm install
+script:
+  - npm run coverage
+after_success:
+  - npm run coveralls
