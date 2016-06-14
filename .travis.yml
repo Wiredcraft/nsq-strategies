@@ -1,5 +1,10 @@
 sudo: false
 language: node_js
+cache:
+  directories:
+    - node_modules
+notifications:
+  email: false
 addons:
   apt:
     sources:
@@ -11,8 +16,9 @@ env:
     - CXX=g++-4.8 
     - NSQ_DOWNLOAD=nsq-0.3.6.linux-amd64.go1.5.1
 node_js:
-  - "4.2"
-before_script: 
+  - "5"
+  - "4"
+before_script:
   - wget http://bitly-downloads.s3.amazonaws.com/nsq/$NSQ_DOWNLOAD.tar.gz
   - tar zxvf $NSQ_DOWNLOAD.tar.gz
   - export PATH=$NSQ_DOWNLOAD/bin:$PATH

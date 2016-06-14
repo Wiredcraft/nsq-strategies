@@ -33,7 +33,8 @@ do
         -lookupd-tcp-address="127.0.0.1:9001" \
         -lookupd-tcp-address="127.0.0.1:9002" >> "$NSQD_LOG" 2>&1 &
 done
-sleep 10
+#sleep 5 seconds to let service setup
+sleep 5
 nsqadmin \
     -http-address="0.0.0.0:9000" \
     -lookupd-http-address="127.0.0.1:9011" \
