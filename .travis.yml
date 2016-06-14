@@ -1,7 +1,15 @@
 sudo: false
 language: node_js
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
 env:
-- NSQ_DOWNLOAD=nsq-0.3.8.linux-amd64.go1.6.2
+  global:
+    - CXX=g++-4.8 
+    - NSQ_DOWNLOAD=nsq-0.3.6.linux-amd64.go1.5.1
 node_js:
   - "4.2"
 before_script: 
@@ -12,4 +20,7 @@ before_script:
   - ./scripts/bootNsq.sh
 install:
   - npm install
-
+script:
+  - npm run coverage
+after_success:
+  - npm run coveralls
