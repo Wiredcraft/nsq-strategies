@@ -2,6 +2,7 @@
 
 # Borrow from https://anthonysterling.com/posts/quick-nsq-cluster.html
 
+
 LOG_DIR=/tmp/log
 [ -d "$LOG_DIR" ] || mkdir $LOG_DIR
 
@@ -32,7 +33,7 @@ do
         -lookupd-tcp-address="127.0.0.1:9001" \
         -lookupd-tcp-address="127.0.0.1:9002" >> "$NSQD_LOG" 2>&1 &
 done
-
+sleep 10
 nsqadmin \
     -http-address="0.0.0.0:9000" \
     -lookupd-http-address="127.0.0.1:9011" \
