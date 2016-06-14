@@ -4,7 +4,9 @@
   "description": "A nsq client with typical trategies in node.js",
   "main": "index.js",
   "scripts": {
-    "test": "npm test"
+    "pretest": "npm run jscs-fix && jshint lib",
+    "jscs-fix": "jscs lib --fix",
+    "test": "mocha test/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -28,6 +30,8 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
+    "jscs": "^3.0.4",
+    "jshint": "^2.9.2",
     "request": "^2.72.0"
   }
 }
