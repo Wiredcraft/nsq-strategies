@@ -3,8 +3,10 @@
 # Borrow from https://anthonysterling.com/posts/quick-nsq-cluster.html
 
 
-LOG_DIR=/tmp/log
+LOG_DIR=/tmp/nsq-log
+DATA_DIR=/tmp/nsq-data
 [ -d "$LOG_DIR" ] || mkdir $LOG_DIR
+[ -d "$DATA_DIR" ] || mkdir $DATA_DIR
 
 NSQLOOKUPD_LOG=$LOG_DIR/nsqlookupd.log
 NSQD_LOG=$LOG_DIR/nsqd.log
@@ -30,6 +32,7 @@ do
         -broadcast-address="127.0.0.1" \
         -tcp-address="127.0.0.1:903$NODE" \
         -http-address="127.0.0.1:904$NODE" \
+        -data-path="$DATA_DIR" \
         -lookupd-tcp-address="127.0.0.1:9001" \
         -lookupd-tcp-address="127.0.0.1:9002" >> "$NSQD_LOG" 2>&1 &
 done
