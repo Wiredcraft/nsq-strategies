@@ -5,6 +5,7 @@ const spawn = require('child_process').spawn;
 const randexp = require('randexp').randexp;
 const request = require('request');
 const retry = require('retry');
+const fs = require('fs');
 
 const Producer = require('../index').Producer;
 const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
@@ -38,7 +39,9 @@ describe('producer', function() {
         const nsqTail = spawn('nsq_tail', ['--lookupd-http-address=127.0.0.1:9011',
             `--topic=${topic}`, '-n', '1']);
         nsqTail.stdout.on('data', (data) => {
-          expect(data.toString()).to.contain('test producer');
+          if (data.toString().trim()) {
+            expect(data.toString().trim()).to.contain('test producer');
+          }
         });
         nsqTail.on('close', (code) => {
           removeTopicFromAllNsqd(topic, done);
@@ -151,7 +154,7 @@ describe('producer', function() {
     function startNsqd(callback) {
       const childProcess = spawn('nsqd', ['-broadcast-address=127.0.0.1', '-tcp-address=127.0.0.1:9033',
           '-http-address=127.0.0.1:9043', '-lookupd-tcp-address=127.0.0.1:9001',
-          '-lookupd-tcp-address=127.0.0.1:9002', '-data-path=/tmp/nsq-data']);
+          '-lookupd-tcp-address=127.0.0.1:9002', '-data-path=/tmp/nsq-data-3']);
       const operation = retry.operation({
         retries: 3,
         factor: 2,
@@ -167,6 +170,18 @@ describe('producer', function() {
       });
     }
 
+    before('mkdir for nsqd', (done) => {
+      fs.mkdir('/tmp/nsq-data-3', (err) => {
+        if (err) {
+          if (err.code === 'EEXIST') {
+            return done(); // ignore the error if the folder already exists
+          }
+          return done(err);
+        }
+        done();
+      }) ;
+    });
+
     it('should raise error when nsqd is gone', (done) => {
       const topic = randexp(/Reconnect-([a-z]{8})/);
       const p = new Producer({
@@ -180,7 +195,9 @@ describe('producer', function() {
             spawn('nsq_tail', ['--lookupd-http-address=127.0.0.1:9011',
                 `--topic=${topic}`, '-n', '1'])
               .stdout.on('data', (data) => {
-                data.toString().should.contain('message before reconnect');
+                if (data.toString().trim()) {
+                  expect(data.toString().trim()).to.contain('message before reconnect');
+                }
               })
               .on('close', (code) => {
                 nsqd.kill();

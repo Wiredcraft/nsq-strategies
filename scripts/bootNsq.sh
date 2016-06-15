@@ -6,7 +6,6 @@
 LOG_DIR=/tmp/nsq-log
 DATA_DIR=/tmp/nsq-data
 [ -d "$LOG_DIR" ] || mkdir $LOG_DIR
-[ -d "$DATA_DIR" ] || mkdir $DATA_DIR
 
 NSQLOOKUPD_LOG=$LOG_DIR/nsqlookupd.log
 NSQD_LOG=$LOG_DIR/nsqd.log
@@ -28,11 +27,12 @@ done
 
 for NODE in {1..2};
 do
+    [ -d "$DATA_DIR-$NODE" ] || mkdir $DATA_DIR-$NODE
     nsqd \
         -broadcast-address="127.0.0.1" \
         -tcp-address="127.0.0.1:903$NODE" \
         -http-address="127.0.0.1:904$NODE" \
-        -data-path="$DATA_DIR" \
+        -data-path="$DATA_DIR-$NODE" \
         -lookupd-tcp-address="127.0.0.1:9001" \
         -lookupd-tcp-address="127.0.0.1:9002" >> "$NSQD_LOG" 2>&1 &
 done

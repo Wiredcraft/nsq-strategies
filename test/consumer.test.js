@@ -1,6 +1,6 @@
 'use strict';
 
-require('chai').should();
+const expect = require('chai').expect;
 const request = require('request');
 const randexp = require('randexp').randexp;
 
@@ -8,7 +8,8 @@ const Consumer = require('../index').Consumer;
 
 const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
 
-describe('consumer', () => {
+describe('consumer', function () {
+  this.timeout(5000);
   const send = (topic, msg, cb) => {
     const option = {
       uri: `http://127.0.0.1:9042/put?topic=${topic}`,
@@ -27,7 +28,7 @@ describe('consumer', () => {
           lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
         });
       c.consume((msg) => {
-        msg.body.toString().should.be.equal('hello nsq');
+        expect(msg.body.toString()).to.be.equal('hello nsq');
         msg.finish();
         removeTopicFromAllNsqd(topic, done);
       });
@@ -35,7 +36,6 @@ describe('consumer', () => {
   });
 
   it('should be able to requeu message', function(done) {
-    this.timeout(5000);
     const topic = randexp(/Consume-([a-z]{8})/);
     send(topic, 'test requeue', () => {
       const c = new Consumer(topic, 'sit', {
@@ -44,7 +44,7 @@ describe('consumer', () => {
       let n = 0;
       c.consume((msg) => {
         n++;
-        msg.body.toString().should.be.equal('test requeue');
+        expect(msg.body.toString()).to.be.equal('test requeue');
         if (n === 1) {
           msg.requeue(1500, false);
         }
