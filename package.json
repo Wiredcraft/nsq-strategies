@@ -1,6 +1,6 @@
 {
   "name": "nsq-strategies",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A nsq client with typical trategies in node.js",
   "main": "index.js",
   "scripts": {
