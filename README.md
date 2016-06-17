@@ -33,6 +33,7 @@ This module preprares some typical strategies for you.
 * Example
 
 ```js
+  const Producer = require('nsq-strategies').Producer;
   const p = new Producer({
     lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
   }, {
@@ -68,15 +69,15 @@ This module preprares some typical strategies for you.
                       |             |                        
                       +-+----+----+-+                        
                         |    |    |                          
-         +--------------+    |    +------------+             
-         |  msg1             |           msg3  |             
-         |                   |msg2             |             
-         v                   v                 v             
-     +---+----+         +----+---+        +----+---+         
-     |        |         |        |        |        |         
-     | nsqd1  |         | nsqd2  |        | nsqd2  |         
-     |        |         |        |        |        |         
-     +--------+         +--------+        +--------+         
+         +--------------+    |    +---------------+             
+         |  msg1             |              msg3  |             
+         |                   |msg2                |             
+         v                   v                    v             
+     +---+----+         +----+---+           +----+---+         
+     |        |         |        |           |        |         
+     | nsqd1  |         | nsqd2  |           | nsqd2  |         
+     |        |         |        |           |        |         
+     +--------+         +--------+           +--------+         
 ```
 
 #### Fanout strategy
@@ -89,6 +90,7 @@ if this is not expected you have to de-dupe in the consumer side or make the ope
 
 * Example
 ```js
+  const Producer = require('nsq-strategies').Producer;
   const p = new Producer({
     lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
   }, {
@@ -126,21 +128,22 @@ if this is not expected you have to de-dupe in the consumer side or make the ope
                       |             |                        
                       +-+----+----+-+                        
                         |    |    |                          
-         +--------------+    |    +------------+             
-         |  msg1             |           msg1  |             
-         |                   |msg1             |             
-         v                   v                 v             
-     +---+----+         +----+---+        +----+---+         
-     |        |         |        |        |        |         
-     | nsqd1  |         | nsqd2  |        | nsqd2  |         
-     |        |         |        |        |        |         
-     +--------+         +--------+        +--------+         
+         +--------------+    |    +---------------+             
+         |  msg1             |              msg1  |             
+         |                   |msg1                |             
+         v                   v                    v             
+     +---+----+         +----+---+           +----+---+         
+     |        |         |        |           |        |         
+     | nsqd1  |         | nsqd2  |           | nsqd2  |         
+     |        |         |        |           |        |         
+     +--------+         +--------+           +--------+         
 ```
 
 #### Connect a single nsqd directly
 This is useful for development or debugging.
 
 ```js
+  const Producer = require('nsq-strategies').Producer;
   const p = new Producer({
     nsqdHost: '127.0.0.1',
     tcpPort: 9031
@@ -159,6 +162,7 @@ Refer to https://github.com/dudleycarr/nsqjs#new-readertopic-channel-options for
 
 Example:
 ```js
+  const Consumer = require('nsq-strategies').Consumer;
   const c = new Consumer('topic', 'channel', {
       lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
     });
