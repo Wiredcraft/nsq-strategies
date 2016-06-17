@@ -14,7 +14,7 @@ addons:
 env:
   global:
     - CXX=g++-4.8 
-    - NSQ_DOWNLOAD=nsq-0.3.6.linux-amd64.go1.5.1
+    - NSQ_DOWNLOAD=nsq-0.3.8.linux-amd64.go1.6.2
 node_js:
   - "5"
   - "4"
