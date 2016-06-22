@@ -213,7 +213,8 @@ describe('producer', function() {
       });
     });
 
-    it('should be able to produce after reconnection', (done) => {
+    it('should be able to produce after reconnection', function(done) {
+      this.timeout(8000);
       const topic = randexp(/Reconnect-([a-z]{8})/);
       const p = new Producer({
         nsqdHost: '127.0.0.1',
@@ -231,13 +232,160 @@ describe('producer', function() {
                   newNsqd.kill();
                   done();
                 });
-              }, 2000);
+              }, 4000); //1st reconnect after 1 sec, then 2 sec later
             });
           });
         });
       });
 
     });
+  });
+
+  describe('Retry produce', function() {
+    describe('connect nsqd directly', () => {
+      it('should fail if retry is not set', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          nsqdHost: '127.0.0.1',
+          tcpPort: 9031
+        });
+        p.connect((conErr, conns) => {
+          //mock up publish
+          conns.forEach(con => {
+            con.publish = (topic, msg, cb) => {
+              cb(new Error('selfmade publish error'));
+            };
+          });
+          p.produce(topic, 'any message', (err) => {
+            expect(err).to.be.exist;
+            expect(err.message).to.be.equal('selfmade publish error');
+            done();
+          });
+        });
+      });
+
+      it('should be able to retry', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          nsqdHost: '127.0.0.1',
+          tcpPort: 9031
+        });
+        p.connect((conErr, conns) => {
+          //mock up publish
+          let times = 0;
+          conns.forEach(con => {
+            con.publish = (topic, msg, cb) => {
+              times++;
+              if (times < 2) {
+                cb(new Error('selfmade publish error')); //fail at the 1st time
+              } else {
+                cb(); //succeed at the 2nd time
+              }
+            };
+          });
+          p.produce(topic, 'any message', { retry: true }, (err) => {
+            expect(err).to.be.not.exist;
+            done();
+          });
+        });
+      });
+
+      it('should be able to config retry strategy', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          nsqdHost: '127.0.0.1',
+          tcpPort: 9031
+        });
+        p.connect((conErr, conns) => {
+          //mock up publish
+          let times = 0;
+          conns.forEach(con => {
+            con.publish = (topic, msg, cb) => {
+              times++;
+              if (times < 5) {
+                cb(new Error('selfmade publish error'));
+              } else {
+                cb(); //succeed at the 5th times
+              }
+            };
+          });
+          const retryOpt = {
+            retries: 3,
+            minTimeout: 300
+          };
+          p.produce(topic, 'any message', { retry: retryOpt }, (err) => {
+            expect(err).to.be.exist;
+            expect(err.message).to.be.equal('selfmade publish error');
+            done();
+          });
+        });
+      });
+
+    });
+
+    describe('round robin strategy', () => {
+      it('should fail if retry is not set', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+        }, { strategy: Producer.ROUND_ROBIN });
+        p.connect((conErr, conns) => {
+          //mock up publish
+          conns.forEach(con => {
+            con.publish = (topic, msg, cb) => {
+              cb(new Error('selfmade publish error'));
+            };
+          });
+          p.produce(topic, 'any message', (err) => {
+            expect(err).to.be.exist;
+            expect(err.message).to.be.equal('selfmade publish error');
+            done();
+          });
+        });
+      });
+
+      it('should be able to retry', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+        }, { strategy: Producer.ROUND_ROBIN });
+        p.connect((conErr, conns) => {
+          //mock up publish
+          let times = 0;
+          conns.forEach(con => {
+            con.publish = (topic, msg, cb) => {
+              times++;
+              if (times < 3) {
+                cb(new Error('selfmade publish error')); //fail at the first 2 times
+              } else {
+                cb(); //succeed at the 3rd time
+              }
+            };
+          });
+          p.produce(topic, 'any message', { retry: true }, (err) => {
+            expect(err).to.be.not.exist;
+            done();
+          });
+        });
+      });
+    });
+
+    describe('Fanout strategy', () => {
+      it('should fail if retry is set, it`s not supported now', (done) => {
+        const topic = randexp(/Single-([a-z]{8})/);
+        const p = new Producer({
+          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+        }, { strategy: Producer.FAN_OUT });
+        p.connect((conErr, conns) => {
+          p.produce(topic, 'any message', { retry: true }, (err) => {
+            expect(err).to.be.exist;
+            expect(err.message).to.contain('not supported');
+            done();
+          });
+        });
+      });
+    });
+
   });
 
 });
