@@ -213,7 +213,8 @@ describe('producer', function() {
       });
     });
 
-    it('should be able to produce after reconnection', (done) => {
+    it('should be able to produce after reconnection', function(done) {
+      this.timeout(8000);
       const topic = randexp(/Reconnect-([a-z]{8})/);
       const p = new Producer({
         nsqdHost: '127.0.0.1',
