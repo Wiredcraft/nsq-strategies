@@ -177,10 +177,32 @@ Example:
   });
 ```
 
-## Extra
+## Nsqd Connection
 
 There's an auto rennection mechanisim on prodcuer, which means if you lost the connection of the nsqd discovered,
 it will try to reconnect automatically in an exponential way until it's timeouted.
+
+## Produce retry
+
+For every `produce`, you can set the exponential retry for the message.
+```js
+const opt = {
+  retry: {
+    retries: 5,
+    factor: 3
+    //forever: true
+  }
+};
+p.produce(topic, 'message', opt, (err) => {
+  if (err) {
+    console.log(err);
+  }
+});
+```
+* retries: The maximum amount of times to retry, Default is 10.
+* factor: The exponential factor to use. Default is 2.
+* forever: Whether to retry forever, defaults to false.
+* refer [retry](https://www.npmjs.com/package/retry#api) for more options. 
 
 ## TODO
 * Load balance strategy(pick the nsqd which has least topics)
