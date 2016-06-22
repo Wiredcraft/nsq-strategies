@@ -232,7 +232,7 @@ describe('producer', function() {
                   newNsqd.kill();
                   done();
                 });
-              }, 2000);
+              }, 4000); //1st reconnect after 1 sec, then 2 sec later
             });
           });
         });
