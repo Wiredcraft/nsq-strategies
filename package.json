@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "jscs lib && jshint lib",
     "test": "mocha test/*.test.js",
-    "coverage": "istanbul cover _mocha -- test/*.test.js && istanbul check-coverage",
+    "coverage": "npm run pretest && istanbul cover _mocha -- test/*.test.js && istanbul check-coverage",
     "coveralls": "cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
   },
   "repository": {
