@@ -82,6 +82,20 @@ describe('producer', function() {
     });
   });
 
+  it('should be able to close', function(done) {
+    const topic = randexp(/Close-([a-z]{8})/);
+    const p = new Producer({
+      lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+    });
+    p.connect(() => {
+      p.close();
+      p.produce(topic, 'test pub after closed', (err) => {
+        expect(err).to.exist;
+        done();
+      });
+    });
+  });
+
   it('should be able to play round robin', function(done) {
     const topic = randexp(/Roundrobin-([a-z]{8})/);
     const p = new Producer({

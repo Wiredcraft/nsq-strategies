@@ -8,7 +8,7 @@ const Consumer = require('../index').Consumer;
 
 const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
 
-describe('consumer', function () {
+describe('consumer', function() {
   this.timeout(5000);
   const send = (topic, msg, cb) => {
     const option = {
@@ -35,7 +35,37 @@ describe('consumer', function () {
     });
   });
 
+  it('should throw error if connect after auto connection', (done) => {
+    const c = new Consumer('anytopic', 'ipsum', {
+        lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012'],
+        autoConnect: true
+      });
+    try {
+      c.connect();
+    } catch (e) {
+      expect(e).to.exist;
+      done();
+    }
+  });
+
+  it('should receive message successfully with connect manuallly', (done) => {
+    const topic = randexp(/Consume-([a-z]{8})/);
+    send(topic, 'hello nsq', () => {
+      const c = new Consumer(topic, 'ipsum', {
+          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012'],
+          autoConnect: false
+        });
+      c.connect();
+      c.consume((msg) => {
+        expect(msg.body.toString()).to.be.equal('hello nsq');
+        msg.finish();
+        removeTopicFromAllNsqd(topic, done);
+      });
+    });
+  });
+
   it('should be able to requeu message', function(done) {
+    this.timeout(8000);
     const topic = randexp(/Consume-([a-z]{8})/);
     send(topic, 'test requeue', () => {
       const c = new Consumer(topic, 'sit', {

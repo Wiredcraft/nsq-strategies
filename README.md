@@ -158,7 +158,9 @@ This is useful for development or debugging.
 ```
 
 ### new Consumer(topic, channel, option)
-Refer to https://github.com/dudleycarr/nsqjs#new-readertopic-channel-options for parameters usages. Currently `Consumer` is just a delegation of `Reader` in nsqjs.
+* `option`:
+  * `autoConnect`: boolean (default: true)
+  * Other optional properties can be refered to https://github.com/dudleycarr/nsqjs#new-readertopic-channel-options for parameters usages. Currently `Consumer` is just a delegation of `Reader` in nsqjs.
 
 Example:
 ```js
