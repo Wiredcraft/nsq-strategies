@@ -156,6 +156,19 @@ This is useful for development or debugging.
     });
   });
 ```
+#### Singleton producer
+Ordinarily you only need one producer in your application, you can use the singleton method for convenience.
+```js
+  const Producer = require('nsq-strategies').Producer;
+  const lookupdAddr = ['127.0.0.1:9011', '127.0.0.1:9012'];
+  const opt = { strategy: Producer.ROUND_ROBIN };
+  //singleton will call connect automatically
+  Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
+    p.produce(topic, 'some message', (err) => {
+      //TODO
+    });
+
+```
 
 ### new Consumer(topic, channel, option)
 * `option`:

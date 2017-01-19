@@ -163,6 +163,49 @@ describe('producer', function() {
     });
   });
 
+  describe('Singleton', () => {
+
+    it('should be able to publish', (done) => {
+      const topic = randexp(/Single-([a-z]{8})/);
+      const lookupdAddr = ['127.0.0.1:9011', '127.0.0.1:9012'];
+      const opt = { strategy: Producer.ROUND_ROBIN };
+      Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
+        expect(e).to.be.not.exist;
+        p.produce(topic, 'some message', (err) => {
+          expect(err).to.be.not.exist;
+          done();
+        });
+      });
+    });
+
+    it('should be singleton', (done) => {
+      const lookupdAddr = ['127.0.0.1:9011', '127.0.0.1:9012'];
+      const opt = { strategy: Producer.ROUND_ROBIN };
+      Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p1) => {
+        Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p2) => {
+          expect(p1).to.be.deep.equal(p2);
+          done();
+        });
+      });
+    });
+
+    it('should be able to publish twice', (done) => {
+      const topic = randexp(/Single-([a-z]{8})/);
+      const lookupdAddr = ['127.0.0.1:9011', '127.0.0.1:9012'];
+      const opt = { strategy: Producer.ROUND_ROBIN };
+      Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
+        p.produce(topic, 'some message', (err) => {
+          expect(err).to.be.not.exist;
+          p.produce(topic, 'some other message', (err2) => {
+            expect(err2).to.be.not.exist;
+            done();
+          });
+        });
+      });
+    });
+  });
+
+
   describe('reconnect', function() {
 
     function startNsqd(callback) {
@@ -228,7 +271,7 @@ describe('producer', function() {
     });
 
     it('should be able to produce after reconnection', function(done) {
-      this.timeout(8000);
+      this.timeout(10000);
       const topic = randexp(/Reconnect-([a-z]{8})/);
       const p = new Producer({
         nsqdHost: '127.0.0.1',
@@ -246,7 +289,7 @@ describe('producer', function() {
                   newNsqd.kill();
                   done();
                 });
-              }, 4000); //1st reconnect after 1 sec, then 2 sec later
+              }, 6000); //1st reconnect after 1 sec, then 2 sec later
             });
           });
         });
@@ -255,7 +298,8 @@ describe('producer', function() {
     });
   });
 
-  describe('Retry produce', function() {
+
+  describe('Producer strategies', function() {
     describe('connect nsqd directly', () => {
       it('should fail if retry is not set', (done) => {
         const topic = randexp(/Single-([a-z]{8})/);
@@ -399,6 +443,8 @@ describe('producer', function() {
         });
       });
     });
+
+
 
   });
 
