@@ -25,6 +25,7 @@
   "dependencies": {
     "async": "^1.5.2",
     "debug": "^2.6.1",
+    "file-register": "^0.1.0",
     "nsq-lookup": "1.0.2",
     "nsqjs": "^0.7.12",
     "retry": "^0.10.0"
