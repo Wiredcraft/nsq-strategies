@@ -4,7 +4,7 @@ const request = require('request');
 
 exports.removeTopicFromAllNsqd = (topic, cb) => {
   cb = cb || function() {};
-  const nsqd = ['127.0.0.1:9041', '127.0.0.1:9042'];
+  const nsqd = ['localhost:9021', 'localhost:9031'];
   removeSingle(nsqd[0], () => {
     removeSingle(nsqd[1], cb);
   });
@@ -19,4 +19,3 @@ exports.removeTopicFromAllNsqd = (topic, cb) => {
     });
   }
 };
-

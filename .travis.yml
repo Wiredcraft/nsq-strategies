@@ -1,32 +1,27 @@
-sudo: false
+sudo: required
 language: node_js
 cache:
   directories:
     - node_modules
 notifications:
   email: false
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
+branches:
+  only:
+    - master
 env:
   global:
-    - CXX=g++-4.8 
-    - NSQ_DOWNLOAD=nsq-0.3.8.linux-amd64.go1.6.2
+    - NODE_ENV="test"
+    - DEBUG="nsq-strategies:*"
+    - NSQ_DOCKERS="cluster"
 node_js:
   - "6"
   - "4"
-before_script:
-  - wget http://bitly-downloads.s3.amazonaws.com/nsq/$NSQ_DOWNLOAD.tar.gz
-  - tar zxvf $NSQ_DOWNLOAD.tar.gz
-  - export PATH=$NSQ_DOWNLOAD/bin:$PATH
-  - pushd $TRAVIS_BUILD_DIR
-  - ./scripts/bootNsq.sh
+services:
+  - docker
 install:
   - npm install
+  - npm prune
+before_script:
+  - ./dockers/start.sh
 script:
-  - npm run coverage
-after_success:
-  - npm run coveralls
+  - make test-coveralls

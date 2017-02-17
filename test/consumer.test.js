@@ -12,7 +12,7 @@ describe('consumer', function() {
   this.timeout(5000);
   const send = (topic, msg, cb) => {
     const option = {
-      uri: `http://127.0.0.1:9042/put?topic=${topic}`,
+      uri: `http://localhost:9031/put?topic=${topic}`,
       method: 'POST',
       body: msg
     };
@@ -25,8 +25,8 @@ describe('consumer', function() {
     const topic = randexp(/Consume-([a-z]{8})/);
     send(topic, 'hello nsq', () => {
       const c = new Consumer(topic, 'ipsum', {
-          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
-        });
+        lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+      });
       c.consume((msg) => {
         expect(msg.body.toString()).to.be.equal('hello nsq');
         msg.finish();
@@ -37,9 +37,9 @@ describe('consumer', function() {
 
   it('should throw error if connect after auto connection', (done) => {
     const c = new Consumer('anytopic', 'ipsum', {
-        lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012'],
-        autoConnect: true
-      });
+      lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011'],
+      autoConnect: true
+    });
     try {
       c.connect();
     } catch (e) {
@@ -52,9 +52,9 @@ describe('consumer', function() {
     const topic = randexp(/Consume-([a-z]{8})/);
     send(topic, 'hello nsq', () => {
       const c = new Consumer(topic, 'ipsum', {
-          lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012'],
-          autoConnect: false
-        });
+        lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011'],
+        autoConnect: false
+      });
       c.connect();
       c.consume((msg) => {
         expect(msg.body.toString()).to.be.equal('hello nsq');
@@ -69,7 +69,7 @@ describe('consumer', function() {
     const topic = randexp(/Consume-([a-z]{8})/);
     send(topic, 'test requeue', () => {
       const c = new Consumer(topic, 'sit', {
-        lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+        lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
       });
       let n = 0;
       c.consume((msg) => {
@@ -87,4 +87,3 @@ describe('consumer', function() {
   });
 
 });
-
