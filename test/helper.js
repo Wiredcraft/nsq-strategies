@@ -1,21 +1,24 @@
 'use strict';
 
-const request = require('request');
+const Promise = require('bluebird');
+const spawn = require('child_process').spawn;
 
-exports.removeTopicFromAllNsqd = (topic, cb) => {
-  cb = cb || function() {};
-  const nsqd = ['localhost:9021', 'localhost:9031'];
-  removeSingle(nsqd[0], () => {
-    removeSingle(nsqd[1], cb);
-  });
+const lib = require('../lib');
+const Nsqd = lib.api.Nsqd;
 
-  function removeSingle(host, callback) {
-    const option = {
-      uri: `http://${host}/topic/delete?topic=${topic}`,
-      method: 'POST'
-    };
-    request(option, (e, res, body) => {
-      callback(e);
-    });
-  }
+const nsqd1 = new Nsqd('http://localhost:9021');
+const nsqd2 = new Nsqd('http://localhost:9031');
+
+exports.removeTopicFromAllNsqd = function(topic, done) {
+  return Promise.all([
+    nsqd1.deleteTopic(topic),
+    nsqd2.deleteTopic(topic)
+  ]).catchReturn([]).asCallback(done);
+};
+
+exports.nsqTail = function(composeFile, containerName, topic) {
+  return spawn('docker-compose', [
+    `--file=${composeFile}`, 'run', '--rm', containerName,
+    'nsq_tail', `--topic=${topic}`, '--n=1'
+  ]);
 };

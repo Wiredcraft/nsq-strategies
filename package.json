@@ -26,6 +26,7 @@
     "async": "^1.5.2",
     "debug": "^2.6.1",
     "file-register": "^0.1.0",
+    "lib-rest": "^0.1.4",
     "nsq-lookup": "1.0.2",
     "nsqjs": "^0.7.12",
     "retry": "^0.10.0"
@@ -39,6 +40,7 @@
     "mocha": "^3.2.0",
     "once": "^1.4.0",
     "randexp": "^0.4.4",
-    "request": "^2.79.0"
+    "request": "^2.79.0",
+    "should": "^11.2.0"
   }
 }
