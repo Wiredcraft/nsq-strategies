@@ -1,0 +1,87 @@
+version: '2'
+services:
+  nsqlookupd1:
+    image: nsqio/nsq
+    container_name: nsqlookupd1
+    command: >-
+      /nsqlookupd --broadcast-address="localhost"
+      --tcp-address="0.0.0.0:9000" --http-address="0.0.0.0:9001"
+    ports:
+      - '9000-9001:9000-9001'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqlookupd2:
+    image: nsqio/nsq
+    container_name: nsqlookupd2
+    command: >-
+      /nsqlookupd --broadcast-address="localhost"
+      --tcp-address="0.0.0.0:9010" --http-address="0.0.0.0:9011"
+    ports:
+      - '9010-9011:9010-9011'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqd1:
+    image: nsqio/nsq
+    container_name: nsqd1
+    command: >-
+      /nsqd --broadcast-address="localhost"
+      --lookupd-tcp-address="nsqlookupd1:9000" --lookupd-tcp-address="nsqlookupd2:9010"
+      --tcp-address="0.0.0.0:9020" --http-address="0.0.0.0:9021"
+    ports:
+      - '9020-9021:9020-9021'
+    links:
+      - 'nsqlookupd1:nsqlookupd1'
+      - 'nsqlookupd2:nsqlookupd2'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqd2:
+    image: nsqio/nsq
+    container_name: nsqd2
+    command: >-
+      /nsqd --broadcast-address="localhost"
+      --lookupd-tcp-address="nsqlookupd1:9000" --lookupd-tcp-address="nsqlookupd2:9010"
+      --tcp-address="0.0.0.0:9030" --http-address="0.0.0.0:9031"
+    ports:
+      - '9030-9031:9030-9031'
+    links:
+      - 'nsqlookupd1:nsqlookupd1'
+      - 'nsqlookupd2:nsqlookupd2'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqd3:
+    image: nsqio/nsq
+    container_name: nsqd3
+    command: >-
+      /nsqd --broadcast-address="localhost"
+      --lookupd-tcp-address="nsqlookupd1:9000" --lookupd-tcp-address="nsqlookupd2:9010"
+      --tcp-address="0.0.0.0:9040" --http-address="0.0.0.0:9041"
+    ports:
+      - '9040-9041:9040-9041'
+    links:
+      - 'nsqlookupd1:nsqlookupd1'
+      - 'nsqlookupd2:nsqlookupd2'
+    networks:
+      - nsq_strategies
+  nsqadmin:
+    image: nsqio/nsq
+    container_name: nsqadmin
+    command: >-
+      /nsqadmin
+      --lookupd-http-address="nsqlookupd1:9001" --lookupd-http-address="nsqlookupd2:9011"
+    ports:
+      - '4170-4171:4170-4171'
+    links:
+      - 'nsqlookupd1:nsqlookupd1'
+      - 'nsqlookupd2:nsqlookupd2'
+      - 'nsqd1:nsqd1'
+      - 'nsqd2:nsqd2'
+      - 'nsqd3:nsqd3'
+    restart: always
+    networks:
+      - nsq_strategies
+networks:
+  nsq_strategies:
