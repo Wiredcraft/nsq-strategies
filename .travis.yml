@@ -11,7 +11,6 @@ branches:
 env:
   global:
     - NODE_ENV="test"
-    - DEBUG="nsq-strategies:*"
     - NSQ_DOCKERS="cluster"
 node_js:
   - "6"
@@ -19,8 +18,7 @@ node_js:
 services:
   - docker
 install:
-  - npm install
-  - npm prune
+  - yarn
 before_script:
   - ./dockers/start.sh
 script:
