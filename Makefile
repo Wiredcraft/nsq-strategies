@@ -1,4 +1,4 @@
-ENV = NODE_ENV=test DEBUG=nsq-strategies:*
+ENV = NODE_ENV=test
 BIN = ./node_modules/.bin
 TESTS = test/*.test.js
 MOCHA_OPTS = -b --timeout 20000 --reporter spec
