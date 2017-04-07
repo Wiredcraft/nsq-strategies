@@ -5,6 +5,7 @@ const randexp = require('randexp').randexp;
 
 const nsqdHTTPAddress = 'http://localhost:9021';
 const lookupdHTTPAddress = 'http://localhost:9001';
+const lookupdHTTPAddresses = ['http://localhost:9001', 'http://localhost:9011'];
 const TOPIC = randexp(/\w{8}/);
 const CHANNEL = randexp(/\w{8}/);
 
@@ -220,6 +221,37 @@ describe('API libs', () => {
       return lookupd.deleteTopic(TOPIC).spread((res, body) => {
         body.should.be.Object();
         body.should.have.property('status_txt', 'OK');
+      });
+    });
+  });
+
+  describe('LookupdCluster', () => {
+    let LookupdCluster;
+    let cluster;
+
+    it('should be there', () => {
+      lib.should.have.property('api').which.is.Object();
+      lib.api.should.have.property('LookupdCluster').which.is.Function();
+      LookupdCluster = lib.api.LookupdCluster;
+    });
+
+    it('can build an instance with one address', () => {
+      cluster = new LookupdCluster(lookupdHTTPAddress);
+    });
+
+    it('can list all nodes', () => {
+      return cluster.nodes().then((res) => {
+        res.should.be.Array().with.length(3);
+      });
+    });
+
+    it('can build an instance with two addresses', () => {
+      cluster = new LookupdCluster(lookupdHTTPAddresses);
+    });
+
+    it('can list all nodes', () => {
+      return cluster.nodes().then((res) => {
+        res.should.be.Array().with.length(3);
       });
     });
   });
