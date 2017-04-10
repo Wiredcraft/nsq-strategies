@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ev
 
-# Require some environment variables. Examples:
-# export NSQ_DOCKERS="cluster"
+# Environment variables.
+NSQ_DOCKERS=${NSQ_DOCKERS:-cluster}
 
 pushd `dirname $0`
 DIR=`pwd`

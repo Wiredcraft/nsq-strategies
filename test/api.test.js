@@ -12,14 +12,14 @@ const CHANNEL = randexp(/\w{8}/);
 const lib = require('../');
 
 describe('API libs', () => {
+  let Nsqd;
+  let nsqd;
+
   it('should be there', () => {
     lib.should.have.property('api').which.is.Object();
   });
 
   describe('Nsqd', () => {
-    let Nsqd;
-    let nsqd;
-
     it('should be there', () => {
       lib.should.have.property('api').which.is.Object();
       lib.api.should.have.property('Nsqd').which.is.Function();
@@ -127,6 +127,14 @@ describe('API libs', () => {
     let Lookupd;
     let lookupd;
 
+    before(() => {
+      return nsqd.createChannel(TOPIC, CHANNEL);
+    });
+
+    after(() => {
+      return nsqd.deleteChannel(TOPIC, CHANNEL).catchReturn();
+    });
+
     it('should be there', () => {
       lib.should.have.property('api').which.is.Object();
       lib.api.should.have.property('Lookupd').which.is.Function();
@@ -144,7 +152,8 @@ describe('API libs', () => {
     it('can lookup a topic', () => {
       return lookupd.lookup(TOPIC).spread((res, body) => {
         body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
+        body.should.have.property('channels').which.is.Array();
+        body.should.have.property('producers').which.is.Array();
       });
     });
 
@@ -152,76 +161,67 @@ describe('API libs', () => {
       return lookupd.lookup(randexp(/\w{8}/)).then(() => {
         throw new Error('expected an error');
       }, (err) => {
-        err.should.have.property('statusCode', 500);
-        err.should.have.property('status_txt', 'TOPIC_NOT_FOUND');
+        err.should.have.property('statusCode', 404);
+        err.should.have.property('message', 'TOPIC_NOT_FOUND');
       });
     });
 
     it('can list all topics', () => {
       return lookupd.topics().spread((res, body) => {
         body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
+        body.should.have.property('topics').which.is.Array();
       });
     });
 
     it('can list channels for a topic', () => {
       return lookupd.channels(TOPIC).spread((res, body) => {
         body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
+        body.should.have.property('channels').which.is.Array();
       });
     });
 
     it('can list channels for a wrong topic', () => {
       return lookupd.channels(randexp(/\w{8}/)).spread((res, body) => {
         body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
+        body.should.have.property('channels').which.is.Array();
       });
     });
 
     it('can list all nodes', () => {
       return lookupd.nodes().spread((res, body) => {
         body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
+        body.should.have.property('producers').which.is.Array();
       });
     });
 
     it('can delete a channel', () => {
-      return lookupd.deleteChannel(TOPIC, CHANNEL).spread((res, body) => {
-        body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
-      });
+      return lookupd.deleteChannel(TOPIC, CHANNEL);
     });
 
     it('cannot delete a deleted channel', () => {
       return lookupd.deleteChannel(TOPIC, CHANNEL).then(() => {
         throw new Error('expected an error');
       }, (err) => {
-        err.should.have.property('statusCode', 500);
-        err.should.have.property('status_txt', 'CHANNEL_NOT_FOUND');
+        err.should.have.property('statusCode', 404);
+        err.should.have.property('message', 'CHANNEL_NOT_FOUND');
       });
     });
 
     it('can delete a topic', () => {
-      return lookupd.deleteTopic(TOPIC).spread((res, body) => {
-        body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
-      });
+      return lookupd.deleteTopic(TOPIC);
     });
 
     it('cannot lookup a deleted topic', () => {
       return lookupd.lookup(TOPIC).then(() => {
         throw new Error('expected an error');
       }, (err) => {
-        err.should.have.property('statusCode', 500);
-        err.should.have.property('status_txt', 'TOPIC_NOT_FOUND');
+        err.should.have.property('statusCode', 404);
+        err.should.have.property('message', 'TOPIC_NOT_FOUND');
       });
     });
 
     it('can delete a deleted topic', () => {
-      return lookupd.deleteTopic(TOPIC).spread((res, body) => {
-        body.should.be.Object();
-        body.should.have.property('status_txt', 'OK');
-      });
+      return lookupd.deleteTopic(TOPIC);
     });
   });
 
