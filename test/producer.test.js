@@ -29,7 +29,7 @@ const runOnce = (callback) => {
 
 const TOPIC = randexp(/\w{8}/);
 
-describe('producer', function() {
+describe('producer', () => {
 
   beforeEach((done) => {
     removeTopicFromAllNsqd(TOPIC, done);
@@ -39,7 +39,7 @@ describe('producer', function() {
     removeTopicFromAllNsqd(TOPIC, done);
   });
 
-  it('should be able to publish to single nsqd', function(done) {
+  it('should be able to publish to single nsqd', (done) => {
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030
@@ -58,7 +58,7 @@ describe('producer', function() {
     });
   });
 
-  it('should be able to publish to lookup', function(done) {
+  it('should be able to publish to lookup', (done) => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     });
@@ -76,17 +76,18 @@ describe('producer', function() {
     });
   });
 
-  it('should be called with error if lookup fails', function(done) {
+  it('should be called with error if lookup fails', () => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9091', 'localhost:9092'] //non-existed lookupd
     });
-    p.connect((errors) => {
-      expect(errors).to.be.an('array');
-      done();
+    return p.connect().then(() => {
+      throw new Error('expected an error');
+    }, (err) => {
+      expect(err).to.exist;
     });
   });
 
-  it('should be able to close', function(done) {
+  it('should be able to close', (done) => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     });
@@ -99,7 +100,7 @@ describe('producer', function() {
     });
   });
 
-  it('should be able to play round robin', function(done) {
+  it('should be able to play round robin', (done) => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     });
@@ -124,7 +125,7 @@ describe('producer', function() {
     });
   });
 
-  it('should be able to play fanout', function(done) {
+  it('should be able to play fanout', (done) => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     }, { strategy: Producer.FAN_OUT });
@@ -196,7 +197,7 @@ describe('producer', function() {
     });
   });
 
-  describe('reconnect', function() {
+  describe('reconnect', () => {
 
     beforeEach((done) => {
       removeTopicFromAllNsqd(TOPIC, done);
@@ -262,7 +263,7 @@ describe('producer', function() {
       });
     });
 
-    it('should be able to produce after reconnection', function(done) {
+    it('should be able to produce after reconnection', (done) => {
       const p = new Producer({
         nsqdHost: 'localhost',
         tcpPort: 9040
@@ -295,7 +296,7 @@ describe('producer', function() {
     });
   });
 
-  describe('Producer strategies', function() {
+  describe('Producer strategies', () => {
     describe('connect nsqd directly', () => {
 
       beforeEach((done) => {

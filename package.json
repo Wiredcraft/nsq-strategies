@@ -23,25 +23,24 @@
   },
   "homepage": "https://github.com/Wiredcraft/nsq-strategies#readme",
   "dependencies": {
-    "bluebird": "^3.4.7",
-    "debug": "^2.6.1",
+    "bluebird": "^3.5.0",
+    "debug": "^2.6.3",
     "file-register": "^0.1.0",
     "lib-rest": "^0.1.4",
-    "nsq-lookup": "1.0.2",
     "nsqjs": "^0.7.12",
     "promise-retry": "^1.1.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "coveralls": "^2.11.16",
+    "coveralls": "^2.13.0",
     "istanbul": "^0.4.5",
     "jscs": "^3.0.7",
     "jshint": "^2.9.4",
     "mocha": "^3.2.0",
     "once": "^1.4.0",
-    "randexp": "^0.4.4",
-    "request": "^2.79.0",
+    "randexp": "^0.4.5",
+    "request": "^2.81.0",
     "retry": "^0.10.1",
-    "should": "^11.2.0"
+    "should": "^11.2.1"
   }
 }
