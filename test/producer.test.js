@@ -6,9 +6,12 @@ const randexp = require('randexp').randexp;
 const request = require('request');
 const retry = require('retry');
 const fs = require('fs');
-
+const path = require('path')
 const Producer = require('../index').Producer;
 const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
+
+const composeFile = path.resolve(__dirname, '../dockers/cluster/docker-compose.yml');
+const TOPIC = randexp(/\w{8}/);
 
 const runOnce = (callback) => {
   let count = 0;
@@ -402,5 +405,43 @@ describe('producer', function() {
 
   });
 
+  
+  it('should be called error only once', (done) => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9040
+    });
+    function startNsqd(callback) {
+      spawn('docker-compose', [
+        `--file=${composeFile}`, 'start', 'nsqd3'
+      ]);
+      const operation = retry.operation({
+        retries: 3,
+        factor: 2,
+        minTimeout: 500
+      });
+      operation.attempt((currentAttemps) => {
+        request('http://localhost:9041/ping', (err, res, body) => {
+          if (operation.retry(err)) {
+            return;
+          }
+          callback(err ? operation.mainError() : null);
+        });
+      });
+    }
+    startNsqd((err) => {
+      p.connect((e) => {
+        spawn('docker-compose', [
+          `--file=${composeFile}`, 'stop', 'nsqd3'
+        ]).on('close', (code) => {
+          p.produce(TOPIC, 'message after disconnect', (error) => {
+            expect(error).to.exist;
+            expect(e).not.to.exist;
+            done();
+          });
+        });
+      });
+    });
+  });
 });
 

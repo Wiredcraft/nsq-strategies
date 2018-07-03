@@ -1,0 +1,41 @@
+version: '2'
+services:
+  nsqlookupd:
+    image: nsqio/nsq:v0.3.8
+    container_name: nsqlookupd
+    command: >-
+      /nsqlookupd --broadcast-address="localhost"
+    ports:
+      - '4160-4161:4160-4161'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqd:
+    image: nsqio/nsq:v0.3.8
+    container_name: nsqd
+    command: >-
+      /nsqd --broadcast-address="localhost"
+      --lookupd-tcp-address="nsqlookupd:4160"
+    ports:
+      - '4150-4151:4150-4151'
+    links:
+      - 'nsqlookupd:nsqlookupd'
+    restart: always
+    networks:
+      - nsq_strategies
+  nsqadmin:
+    image: nsqio/nsq:v0.3.8
+    container_name: nsqadmin
+    command: >-
+      /nsqadmin
+      --lookupd-http-address="nsqlookupd:4161"
+    ports:
+      - '4170-4171:4170-4171'
+    links:
+      - 'nsqlookupd:nsqlookupd'
+      - 'nsqd:nsqd'
+    restart: always
+    networks:
+      - nsq_strategies
+networks:
+  nsq_strategies:
