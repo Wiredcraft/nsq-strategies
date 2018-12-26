@@ -279,12 +279,17 @@ describe('producer', () => {
             ]).on('close', (code) => {
               startNsqd((e) => {
                 setTimeout(() => { //wait to reconnection
-                  p.produce(TOPIC, 'message after reconnect', (error) => {
-                    expect(error).to.not.exist;
-                    spawn('docker-compose', [
-                      `--file=${composeFile}`, 'stop', 'nsqd3'
-                    ]);
-                    done();
+                  p.connect((e) => {
+                    if (e) {
+                      return done(e);
+                    }
+                    p.produce(TOPIC, 'message after reconnect', (error) => {
+                      expect(error).to.not.exist;
+                      spawn('docker-compose', [
+                        `--file=${composeFile}`, 'stop', 'nsqd3'
+                      ]);
+                      done();
+                    });
                   });
                 }, 6000); //1st reconnect after 1 sec, then 2 sec later
               });
