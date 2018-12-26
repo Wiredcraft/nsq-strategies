@@ -15,7 +15,6 @@ env:
 node_js:
   - "10"
   - "6"
-  - "4"
 services:
   - docker
 install:
