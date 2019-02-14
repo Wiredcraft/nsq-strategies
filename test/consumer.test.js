@@ -53,6 +53,20 @@ describe('Consumer', () => {
     }
   });
 
+  it('should be able to receive comma splitted string as lookupd addr', (done) => {
+    const c = new Consumer('anytopic', 'ipsum', {
+      lookupdHTTPAddresses: 'http://localhost:9001, http://localhost:9011',
+      autoConnect: false
+    });
+    try {
+      c.connect();
+    } catch (e) {
+      expect(e).to.not.exist;
+      return done(e);
+    }
+    done();
+  });
+
   it('should receive message successfully with connect manuallly', (done) => {
     const topic = randexp(/Consume-([a-z]{8})/);
     nsqd.publish(topic, 'hello nsq').then(() => {
