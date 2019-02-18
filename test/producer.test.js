@@ -87,6 +87,16 @@ describe('producer', () => {
     });
   });
 
+  it('should be able to receive comman slitted string', (done) => {
+    const p = new Producer({
+      lookupdHTTPAddresses: 'localhost:9001,localhost:9011',
+    });
+    p.connect((e) => {
+      expect(e).to.not.exist;
+      done();
+    });
+  });
+
   it('should be able to close', (done) => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
