@@ -60,6 +60,27 @@ describe('producer', () => {
     });
   });
 
+  it('should be able to publish delay msg', done => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030
+    });
+    topic = renewTopic();
+    p.connect(() => {
+      p.produce(topic, ['test delay'], { delay: 10000 }, err => {
+        if (err) {
+          return done(err);
+        }
+        nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            expect(data.toString().trim()).to.contain('test delay');
+            done();
+          }
+        });
+      });
+    });
+  });
+
   it('should be able to publish to lookup', done => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']

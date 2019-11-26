@@ -39,6 +39,20 @@ describe('Consumer', () => {
     }, done);
   });
 
+  it('should receive message successfully', done => {
+    const topic = randexp(/Consume-([a-z]{8})/);
+    nsqd.deferPublish(topic, 'hello delay', 10000).then(() => {
+      const c = new Consumer(topic, 'ipsum', {
+        lookupdHTTPAddresses
+      });
+      c.consume(msg => {
+        expect(msg.body.toString()).to.be.equal('hello delay');
+        msg.finish();
+        removeTopicFromAllNsqd(topic, done);
+      });
+    }, done);
+  });
+
   it('should throw error if connect after auto connection', done => {
     const c = new Consumer('anytopic', 'ipsum', {
       lookupdHTTPAddresses,
