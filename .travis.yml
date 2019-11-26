@@ -20,6 +20,6 @@ services:
 install:
   - yarn
 before_script:
-  - ./dockers/start.sh
+  - ./dockers/up.sh
 script:
   - make test-coveralls

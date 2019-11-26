@@ -1,7 +1,7 @@
 version: '2'
 services:
   nsqlookupd1:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqlookupd1
     command: >-
       /nsqlookupd --broadcast-address="localhost"
@@ -12,7 +12,7 @@ services:
     networks:
       - nsq_strategies
   nsqlookupd2:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqlookupd2
     command: >-
       /nsqlookupd --broadcast-address="localhost"
@@ -23,7 +23,7 @@ services:
     networks:
       - nsq_strategies
   nsqd1:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqd1
     command: >-
       /nsqd --broadcast-address="localhost"
