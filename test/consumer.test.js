@@ -18,11 +18,11 @@ describe('Consumer', () => {
   before(() => {
     Nsqd = lib.api.Nsqd;
     nsqd = new Nsqd(nsqdHTTPAddress);
+    Consumer = lib.Consumer;
   });
 
   it('should be there', () => {
     lib.should.have.property('Consumer').which.is.Function();
-    Consumer = lib.Consumer;
   });
 
   it('should receive message successfully', done => {

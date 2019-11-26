@@ -38,7 +38,7 @@ services:
     networks:
       - nsq_strategies
   nsqd2:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqd2
     command: >-
       /nsqd --broadcast-address="localhost"
@@ -53,7 +53,7 @@ services:
     networks:
       - nsq_strategies
   nsqd3:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqd3
     command: >-
       /nsqd --broadcast-address="localhost"
@@ -67,7 +67,7 @@ services:
     networks:
       - nsq_strategies
   nsqadmin:
-    image: nsqio/nsq:v0.3.8
+    image: nsqio/nsq:v1.2.0
     container_name: nsqadmin
     command: >-
       /nsqadmin
