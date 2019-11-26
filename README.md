@@ -16,6 +16,7 @@ This module preprares some typical strategies for you.
 `npm install nsq-strategies`
 
 ## Usage
+
 ### new Producer(connectConfig, option)
 * `connecConfig`:
   It can be specified with an array of nsqlookupd addresses or a single nsqd.
@@ -23,6 +24,14 @@ This module preprares some typical strategies for you.
 * `option`:
   * `strategy`: `Producer.ROUND_ROBIN` | `Producer.FAN_OUT` (default: `Producer.ROUND_ROBIN`)
   * Other optional properties are exactly same with option in `Writer` of nsqjs. Refer [here](https://github.com/dudleycarr/nsqjs#new-writernsqdhost-nsqdport-options) for details.
+
+#### Method
+* `produce(topic, msgs[, produceOptions, callback])`
+  * `topic`: NSQ Topic
+  * `msgs`: NSQ messages, should use array in delay message.
+  * `produceOptions`:
+    * [`retry`](https://github.com/Wiredcraft/nsq-strategies#produce-retry)
+    * delay: send delay message in given millisecond.
 
 #### Round robin strategy
 
@@ -84,7 +93,7 @@ This module preprares some typical strategies for you.
 
 1. The producer discovers the nsqd nodes from lookupd
 2. Every `produce` spreads the message to all nsqd nodes.
-3. This stategy is mainly for delivery guarantee, it's **not** designed for pub-sub mode in nsq, 
+3. This stategy is mainly for delivery guarantee, it's **not** designed for pub-sub mode in nsq,
 note the message is duplicated among the nsqds, if you have a consumer(client) listening to it's topic, it will get the same message multiple times,
 if this is not expected you have to de-dupe in the consumer side or make the operation for the message idempotent.
 
@@ -217,7 +226,7 @@ p.produce(topic, 'message', opt, (err) => {
 * retries: The maximum amount of times to retry, Default is 10.
 * factor: The exponential factor to use. Default is 2.
 * forever: Whether to retry forever, defaults to false.
-* refer [retry](https://www.npmjs.com/package/retry#api) for more options. 
+* refer [retry](https://www.npmjs.com/package/retry#api) for more options.
 
 ## TODO
 * Load balance strategy(pick the nsqd which has least topics)
