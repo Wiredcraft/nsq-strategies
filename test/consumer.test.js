@@ -1,7 +1,6 @@
 'use strict';
 
 const expect = require('chai').expect;
-// const request = require('request');
 const randexp = require('randexp').randexp;
 
 const lib = require('../');
@@ -19,20 +18,20 @@ describe('Consumer', () => {
   before(() => {
     Nsqd = lib.api.Nsqd;
     nsqd = new Nsqd(nsqdHTTPAddress);
+    Consumer = lib.Consumer;
   });
 
   it('should be there', () => {
     lib.should.have.property('Consumer').which.is.Function();
-    Consumer = lib.Consumer;
   });
 
-  it('should receive message successfully', (done) => {
+  it('should receive message successfully', done => {
     const topic = randexp(/Consume-([a-z]{8})/);
     nsqd.publish(topic, 'hello nsq').then(() => {
       const c = new Consumer(topic, 'ipsum', {
         lookupdHTTPAddresses
       });
-      c.consume((msg) => {
+      c.consume(msg => {
         expect(msg.body.toString()).to.be.equal('hello nsq');
         msg.finish();
         removeTopicFromAllNsqd(topic, done);
@@ -40,7 +39,21 @@ describe('Consumer', () => {
     }, done);
   });
 
-  it('should throw error if connect after auto connection', (done) => {
+  it('should receive message successfully', done => {
+    const topic = randexp(/Consume-([a-z]{8})/);
+    nsqd.deferPublish(topic, 'hello delay', 10000).then(() => {
+      const c = new Consumer(topic, 'ipsum', {
+        lookupdHTTPAddresses
+      });
+      c.consume(msg => {
+        expect(msg.body.toString()).to.be.equal('hello delay');
+        msg.finish();
+        removeTopicFromAllNsqd(topic, done);
+      });
+    }, done);
+  });
+
+  it('should throw error if connect after auto connection', done => {
     const c = new Consumer('anytopic', 'ipsum', {
       lookupdHTTPAddresses,
       autoConnect: true
@@ -53,7 +66,7 @@ describe('Consumer', () => {
     }
   });
 
-  it('should be able to receive comma splitted string as lookupd addr', (done) => {
+  it('should be able to receive comma splitted string as lookupd addr', done => {
     const c = new Consumer('anytopic', 'ipsum', {
       lookupdHTTPAddresses: 'http://localhost:9001, http://localhost:9011',
       autoConnect: false
@@ -67,7 +80,7 @@ describe('Consumer', () => {
     done();
   });
 
-  it('should receive message successfully with connect manuallly', (done) => {
+  it('should receive message successfully with connect manuallly', done => {
     const topic = randexp(/Consume-([a-z]{8})/);
     nsqd.publish(topic, 'hello nsq').then(() => {
       const c = new Consumer(topic, 'ipsum', {
@@ -75,7 +88,7 @@ describe('Consumer', () => {
         autoConnect: false
       });
       c.connect();
-      c.consume((msg) => {
+      c.consume(msg => {
         expect(msg.body.toString()).to.be.equal('hello nsq');
         msg.finish();
         removeTopicFromAllNsqd(topic, done);
@@ -83,14 +96,14 @@ describe('Consumer', () => {
     }, done);
   });
 
-  it('should be able to requeu message', (done) => {
+  it('should be able to requeu message', done => {
     const topic = randexp(/Consume-([a-z]{8})/);
     nsqd.publish(topic, 'test requeue').then(() => {
       const c = new Consumer(topic, 'sit', {
         lookupdHTTPAddresses
       });
       let n = 0;
-      c.consume((msg) => {
+      c.consume(msg => {
         n++;
         expect(msg.body.toString()).to.be.equal('test requeue');
         if (n === 1) {
@@ -103,5 +116,4 @@ describe('Consumer', () => {
       });
     }, done);
   });
-
 });

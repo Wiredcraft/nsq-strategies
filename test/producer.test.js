@@ -13,175 +13,244 @@ const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
 
 const composeFile = path.resolve(__dirname, '../dockers/cluster/docker-compose.yml');
 
-const runOnce = (callback) => {
+const runCount = (c = 1, callback) => {
   let count = 0;
-  return (err) => {
+  return err => {
     count++;
     if (err) {
       count = 2;
       return callback(err);
     }
-    if (count === 2) {
+    if (count === c) {
       callback(err);
     }
   };
 };
 
-const TOPIC = randexp(/\w{8}/);
+let topic;
+const renewTopic = () => randexp(/\w{8}/);
 
 describe('producer', () => {
-
-  beforeEach((done) => {
-    removeTopicFromAllNsqd(TOPIC, done);
+  beforeEach(done => {
+    removeTopicFromAllNsqd(topic, done);
   });
 
-  afterEach((done) => {
-    removeTopicFromAllNsqd(TOPIC, done);
+  afterEach(done => {
+    removeTopicFromAllNsqd(topic, done);
   });
 
-  it('should be able to publish to single nsqd', (done) => {
+  it('should be able to publish to single nsqd', done => {
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030
     });
+    topic = renewTopic();
     p.connect(() => {
-      p.produce(TOPIC, 'test producer', (err) => {
+      p.produce(topic, 'test producer', err => {
         if (err) {
           return done(err);
         }
-        nsqTail(composeFile, 'nsqd1', TOPIC).stdout.on('data', (data) => {
+        nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
           if (data.toString().trim()) {
             expect(data.toString().trim()).to.contain('test producer');
+            done();
           }
-        }).on('close', done);
+        });
       });
     });
   });
 
-  it('should be able to publish to lookup', (done) => {
+  it('should be able to publish delay msg', done => {
     const p = new Producer({
-      lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+      nsqdHost: 'localhost',
+      tcpPort: 9030
     });
+    topic = renewTopic();
     p.connect(() => {
-      p.produce(TOPIC, 'test lookup', (err) => {
+      p.produce(topic, ['test delay'], { delay: 10000 }, err => {
         if (err) {
           return done(err);
         }
-        nsqTail(composeFile, 'nsqd1', TOPIC).stdout.on('data', (data) => {
-          if (data.toString().trim()) { //need remove \n
-            expect(data.toString()).to.contain('test lookup');
+        nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            expect(data.toString().trim()).to.contain('test delay');
+            done();
           }
-        }).on('close', done);
+        });
+      });
+    });
+  });
+
+  it('should be able to publish delay msg and ignore invalid param', done => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030
+    });
+    topic = renewTopic();
+    p.connect(() => {
+      p.produce(topic, ['test delay invalid'], { delay: () => {} }, err => {
+        if (err) {
+          return done(err);
+        }
+        nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            expect(data.toString().trim()).to.contain('test delay invalid');
+            done();
+          }
+        });
+      });
+    });
+  });
+
+  it('should be able to publish to lookup', done => {
+    const p = new Producer({
+      lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+    });
+    const runOnce = runCount(1, done);
+    topic = renewTopic();
+    p.connect(() => {
+      p.produce(topic, 'test lookup', err => {
+        if (err) {
+          return done(err);
+        }
+        nsqTail('nsqd1', topic, '0.0.0.0:9020').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            // need remove \n
+            expect(data.toString()).to.contain('test lookup');
+            runOnce();
+          }
+        });
+        nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            // need remove \n
+            expect(data.toString()).to.contain('test lookup');
+            runOnce();
+          }
+        });
+        nsqTail('nsqd3', topic, '0.0.0.0:9040').stdout.on('data', data => {
+          if (data.toString().trim()) {
+            // need remove \n
+            expect(data.toString()).to.contain('test lookup');
+            done();
+          }
+        });
       });
     });
   });
 
   it('should be called with error if lookup fails', () => {
     const p = new Producer({
-      lookupdHTTPAddresses: ['localhost:9091', 'localhost:9092'] //non-existed lookupd
+      lookupdHTTPAddresses: ['localhost:9091', 'localhost:9092'] // non-existed lookupd
     });
-    return p.connect().then(() => {
-      throw new Error('expected an error');
-    }, (err) => {
-      expect(err).to.exist;
-    });
+    return p.connect().then(
+      () => {
+        throw new Error('expected an error');
+      },
+      err => {
+        expect(err).to.exist;
+      }
+    );
   });
 
-  it('should be able to receive comman slitted string', (done) => {
+  it('should be able to receive comman slitted string', done => {
     const p = new Producer({
-      lookupdHTTPAddresses: 'localhost:9001,localhost:9011',
+      lookupdHTTPAddresses: 'localhost:9001,localhost:9011'
     });
-    p.connect((e) => {
+    p.connect(e => {
       expect(e).to.not.exist;
       done();
     });
   });
 
-  it('should be able to close', (done) => {
+  it('should be able to close', done => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     });
     p.connect(() => {
       p.close();
-      p.produce(TOPIC, 'test pub after closed', (err) => {
+      p.produce(topic, 'test pub after closed', err => {
         expect(err).to.exist;
         done();
       });
     });
   });
 
-  it('should be able to play round robin', (done) => {
+  it('should be able to play round robin', done => {
     const p = new Producer({
       lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
     });
-    const doneOnce = runOnce(done);
+    topic = renewTopic();
+    const doneOnce = runCount(1, done);
     p.connect(() => {
-      p.produce(TOPIC, 'round1', (err) => {});
-      p.produce(TOPIC, 'round2', (err) => {});
-      nsqTail(composeFile, 'nsqd1', TOPIC).stdout.on('data', (data) => {
-        if (data.toString().trim()) { //need remove \n
+      p.produce(topic, 'round1', err => {});
+      p.produce(topic, 'round2', err => {});
+      nsqTail('nsqd1', topic, '0.0.0.0:9020').stdout.on('data', data => {
+        if (data.toString().trim()) {
+          // need remove \n
           expect(data.toString().trim()).to.contain('round');
+          doneOnce();
         }
-      }).on('close', (code) => {
-        doneOnce(code);
       });
-      nsqTail(composeFile, 'nsqd2', TOPIC).stdout.on('data', (data) => {
-        if (data.toString().trim()) { //need remove \n
+      nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+        if (data.toString().trim()) {
+          // need remove \n
           expect(data.toString().trim()).to.contain('round');
+          doneOnce();
         }
-      }).on('close', (code) => {
-        doneOnce(code);
       });
     });
   });
 
-  it('should be able to play fanout', (done) => {
-    const p = new Producer({
-      lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
-    }, { strategy: Producer.FAN_OUT });
-    const doneOnce = runOnce(done);
+  it('should be able to play fanout', done => {
+    const p = new Producer(
+      {
+        lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+      },
+      { strategy: Producer.FAN_OUT }
+    );
+    topic = renewTopic();
+    const doneTwice = runCount(2, done);
     p.connect(() => {
-      p.produce(TOPIC, 'fanout message', (err) => {});
-      nsqTail(composeFile, 'nsqd1', TOPIC).stdout.on('data', (data) => {
-        if (data.toString().trim()) { //need remove \n
+      p.produce(topic, 'fanout message', err => {});
+      nsqTail('nsqd1', topic, '0.0.0.0:9020').stdout.on('data', data => {
+        if (data.toString().trim()) {
+          // need remove \n
           expect(data.toString().trim()).to.contain('fanout message');
+          doneTwice();
         }
-      }).on('close', (code) => {
-        doneOnce(code);
       });
-      nsqTail(composeFile, 'nsqd2', TOPIC).stdout.on('data', (data) => {
-        if (data.toString().trim()) { //need remove \n
+      nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+        if (data.toString().trim()) {
+          // need remove \n
           expect(data.toString().trim()).to.contain('fanout message');
+          doneTwice();
         }
-      }).on('close', (code) => {
-        doneOnce(code);
       });
     });
   });
 
   describe('Singleton', () => {
-
-    beforeEach((done) => {
-      removeTopicFromAllNsqd(TOPIC, done);
+    beforeEach(done => {
+      removeTopicFromAllNsqd(topic, done);
     });
 
-    afterEach((done) => {
-      removeTopicFromAllNsqd(TOPIC, done);
+    afterEach(done => {
+      removeTopicFromAllNsqd(topic, done);
     });
 
-    it('should be able to publish', (done) => {
+    it('should be able to publish', done => {
       const lookupdAddr = ['localhost:9001', 'localhost:9011'];
       const opt = { strategy: Producer.ROUND_ROBIN };
       Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
         expect(e).to.be.not.exist;
-        p.produce(TOPIC, 'some message', (err) => {
+        p.produce(topic, 'some message', err => {
           expect(err).to.be.not.exist;
           done();
         });
       });
     });
 
-    it('should be singleton', (done) => {
+    it('should be singleton', done => {
       const lookupdAddr = ['localhost:9001', 'localhost:9011'];
       const opt = { strategy: Producer.ROUND_ROBIN };
       Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p1) => {
@@ -192,13 +261,13 @@ describe('producer', () => {
       });
     });
 
-    it('should be able to publish twice', (done) => {
+    it('should be able to publish twice', done => {
       const lookupdAddr = ['localhost:9001', 'localhost:9011'];
       const opt = { strategy: Producer.ROUND_ROBIN };
       Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
-        p.produce(TOPIC, 'some message', (err) => {
+        p.produce(topic, 'some message', err => {
           expect(err).to.be.not.exist;
-          p.produce(TOPIC, 'some other message', (err2) => {
+          p.produce(topic, 'some other message', err2 => {
             expect(err2).to.be.not.exist;
             done();
           });
@@ -208,25 +277,22 @@ describe('producer', () => {
   });
 
   describe('reconnect', () => {
-
-    beforeEach((done) => {
-      removeTopicFromAllNsqd(TOPIC, done);
+    beforeEach(done => {
+      removeTopicFromAllNsqd(topic, done);
     });
 
-    afterEach((done) => {
-      removeTopicFromAllNsqd(TOPIC, done);
+    afterEach(done => {
+      removeTopicFromAllNsqd(topic, done);
     });
 
     function startNsqd(callback) {
-      spawn('docker-compose', [
-        `--file=${composeFile}`, 'start', 'nsqd3'
-      ]);
+      spawn('docker-compose', [`--file=${composeFile}`, 'start', 'nsqd3']);
       const operation = retry.operation({
         retries: 3,
         factor: 2,
         minTimeout: 500
       });
-      operation.attempt((currentAttemps) => {
+      operation.attempt(currentAttemps => {
         request('http://localhost:9041/ping', (err, res, body) => {
           if (operation.retry(err)) {
             return;
@@ -236,100 +302,97 @@ describe('producer', () => {
       });
     }
 
-    before('stop nsqd', (done) => {
-      spawn('docker-compose', [
-        `--file=${composeFile}`, 'stop', 'nsqd3'
-      ]).on('close', done);
+    before('stop nsqd', done => {
+      spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', done);
     });
 
-    it('should raise error when nsqd is gone', (done) => {
+    after('start nsqd', done => {
+      spawn('docker-compose', [`--file=${composeFile}`, 'restart', 'nsqd3']).on('close', done);
+    });
+
+    it('should raise error when nsqd is gone', done => {
       const p = new Producer({
         nsqdHost: 'localhost',
         tcpPort: 9040
       });
-      startNsqd((err) => {
+      startNsqd(err => {
         p.connect(() => {
-          p.produce(TOPIC, 'message before reconnect', (err) => {
+          p.produce(topic, 'message before reconnect', err => {
             if (err) {
               return done(err);
             }
-            nsqTail(composeFile, 'nsqd3', TOPIC).stdout.on('data', (data) => {
-              if (data.toString().trim()) {
-                expect(data.toString().trim()).to.contain('message before reconnect');
-              }
-            }).on('close', (code) => {
-              spawn('docker-compose', [
-                `--file=${composeFile}`, 'stop', 'nsqd3'
-              ]).on('close', () => {
-                p.produce(TOPIC, 'message after reconnect', (err) => {
-                  expect(err.message).to.contain('No connections to nsqd');
-                  p.close();
-                  done();
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-
-    it('should be able to produce after reconnection', (done) => {
-      const p = new Producer({
-        nsqdHost: 'localhost',
-        tcpPort: 9040
-      });
-      startNsqd((err) => {
-        p.connect((e) => {
-          p.produce(TOPIC, 'message before reconnect', (err) => {
-            if (err) {
-              return done(err);
-            }
-            spawn('docker-compose', [
-              `--file=${composeFile}`, 'stop', 'nsqd3'
-            ]).on('close', (code) => {
-              startNsqd((e) => {
-                setTimeout(() => { //wait to reconnection
-                  p.produce(TOPIC, 'message after reconnect', (error) => {
-                    expect(error).to.not.exist;
-                    spawn('docker-compose', [
-                      `--file=${composeFile}`, 'stop', 'nsqd3'
-                    ]);
+            nsqTail('nsqd3', topic, '0.0.0.0:9030')
+              .stdout.on('data', data => {
+                if (data.toString().trim()) {
+                  expect(data.toString().trim()).to.contain('message before reconnect');
+                }
+              })
+              .on('close', code => {
+                spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', () => {
+                  p.produce(topic, 'message after reconnect', err => {
+                    expect(err.message).to.contain('No connections to nsqd');
+                    p.close();
                     done();
                   });
-                }, 6000); //1st reconnect after 1 sec, then 2 sec later
+                });
+              });
+          });
+        });
+      });
+    });
+
+    it('should be able to produce after reconnection', done => {
+      const p = new Producer({
+        nsqdHost: 'localhost',
+        tcpPort: 9040
+      });
+      startNsqd(err => {
+        p.connect(e => {
+          p.produce(topic, 'message before reconnect', err => {
+            if (err) {
+              return done(err);
+            }
+            spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', code => {
+              startNsqd(e => {
+                setTimeout(() => {
+                  // wait to reconnection
+                  p.produce(topic, 'message after reconnect', error => {
+                    expect(error).to.not.exist;
+                    spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']);
+                    done();
+                  });
+                }, 6000); // 1st reconnect after 1 sec, then 2 sec later
               });
             });
           });
         });
       });
-
     });
   });
 
   describe('Producer strategies', () => {
     describe('connect nsqd directly', () => {
-
-      beforeEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      beforeEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      afterEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      afterEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      it('should fail if retry is not set', (done) => {
+      it('should fail if retry is not set', done => {
         const p = new Producer({
           nsqdHost: 'localhost',
           tcpPort: 9030
         });
         p.connect((conErr, conns) => {
-          //mock up publish
+          // mock up publish
           conns.forEach(con => {
             con.publish = (topic, msg, cb) => {
               cb(new Error('selfmade publish error'));
             };
           });
-          p.produce(TOPIC, 'any message', (err) => {
+          p.produce(topic, 'any message', err => {
             expect(err).to.be.exist;
             expect(err.message).to.be.equal('selfmade publish error');
             done();
@@ -337,38 +400,38 @@ describe('producer', () => {
         });
       });
 
-      it('should be able to retry', (done) => {
+      it('should be able to retry', done => {
         const p = new Producer({
           nsqdHost: 'localhost',
           tcpPort: 9030
         });
         p.connect((conErr, conns) => {
-          //mock up publish
+          // mock up publish
           let times = 0;
           conns.forEach(con => {
             con.publish = (topic, msg, cb) => {
               times++;
               if (times < 2) {
-                cb(new Error('selfmade publish error')); //fail at the 1st time
+                cb(new Error('selfmade publish error')); // fail at the 1st time
               } else {
-                cb(); //succeed at the 2nd time
+                cb(); // succeed at the 2nd time
               }
             };
           });
-          p.produce(TOPIC, 'any message', { retry: true }, (err) => {
+          p.produce(topic, 'any message', { retry: true }, err => {
             expect(err).to.be.not.exist;
             done();
           });
         });
       });
 
-      it('should be able to config retry strategy', (done) => {
+      it('should be able to config retry strategy', done => {
         const p = new Producer({
           nsqdHost: 'localhost',
           tcpPort: 9030
         });
         p.connect((conErr, conns) => {
-          //mock up publish
+          // mock up publish
           let times = 0;
           conns.forEach(con => {
             con.publish = (topic, msg, cb) => {
@@ -376,7 +439,7 @@ describe('producer', () => {
               if (times < 5) {
                 cb(new Error('selfmade publish error'));
               } else {
-                cb(); //succeed at the 5th times
+                cb(); // succeed at the 5th times
               }
             };
           });
@@ -384,38 +447,39 @@ describe('producer', () => {
             retries: 3,
             minTimeout: 300
           };
-          p.produce(TOPIC, 'any message', { retry: retryOpt }, (err) => {
+          p.produce(topic, 'any message', { retry: retryOpt }, err => {
             expect(err).to.be.exist;
             expect(err.message).to.be.equal('selfmade publish error');
             done();
           });
         });
       });
-
     });
 
     describe('round robin strategy', () => {
-
-      beforeEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      beforeEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      afterEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      afterEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      it('should fail if retry is not set', (done) => {
-        const p = new Producer({
-          lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
-        }, { strategy: Producer.ROUND_ROBIN });
+      it('should fail if retry is not set', done => {
+        const p = new Producer(
+          {
+            lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+          },
+          { strategy: Producer.ROUND_ROBIN }
+        );
         p.connect((conErr, conns) => {
-          //mock up publish
+          // mock up publish
           conns.forEach(con => {
             con.publish = (topic, msg, cb) => {
               cb(new Error('selfmade publish error'));
             };
           });
-          p.produce(TOPIC, 'any message', (err) => {
+          p.produce(topic, 'any message', err => {
             expect(err).to.be.exist;
             expect(err.message).to.be.equal('selfmade publish error');
             done();
@@ -423,24 +487,27 @@ describe('producer', () => {
         });
       });
 
-      it('should be able to retry', (done) => {
-        const p = new Producer({
-          lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
-        }, { strategy: Producer.ROUND_ROBIN });
+      it('should be able to retry', done => {
+        const p = new Producer(
+          {
+            lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+          },
+          { strategy: Producer.ROUND_ROBIN }
+        );
         p.connect((conErr, conns) => {
-          //mock up publish
+          // mock up publish
           let times = 0;
           conns.forEach(con => {
             con.publish = (topic, msg, cb) => {
               times++;
               if (times < 3) {
-                cb(new Error('selfmade publish error')); //fail at the first 2 times
+                cb(new Error('selfmade publish error')); // fail at the first 2 times
               } else {
-                cb(); //succeed at the 3rd time
+                cb(); // succeed at the 3rd time
               }
             };
           });
-          p.produce(TOPIC, 'any message', { retry: true }, (err) => {
+          p.produce(topic, 'any message', { retry: true }, err => {
             expect(err).to.be.not.exist;
             done();
           });
@@ -449,21 +516,23 @@ describe('producer', () => {
     });
 
     describe('Fanout strategy', () => {
-
-      beforeEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      beforeEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      afterEach((done) => {
-        removeTopicFromAllNsqd(TOPIC, done);
+      afterEach(done => {
+        removeTopicFromAllNsqd(topic, done);
       });
 
-      it('should fail if retry is set, it`s not supported now', (done) => {
-        const p = new Producer({
-          lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
-        }, { strategy: Producer.FAN_OUT });
+      it('should fail if retry is set, it`s not supported now', done => {
+        const p = new Producer(
+          {
+            lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+          },
+          { strategy: Producer.FAN_OUT }
+        );
         p.connect((conErr, conns) => {
-          p.produce(TOPIC, 'any message', { retry: true }, (err) => {
+          p.produce(topic, 'any message', { retry: true }, err => {
             expect(err).to.be.exist;
             expect(err.message).to.contain('not supported');
             done();
@@ -471,7 +540,5 @@ describe('producer', () => {
         });
       });
     });
-
   });
-
 });

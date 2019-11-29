@@ -55,21 +55,27 @@ describe('API libs', () => {
     });
 
     it('cannot delete a deleted topic', () => {
-      return nsqd.deleteTopic(TOPIC).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'TOPIC_NOT_FOUND');
-      });
+      return nsqd.deleteTopic(TOPIC).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'TOPIC_NOT_FOUND');
+        }
+      );
     });
 
     it('cannot empty a deleted topic', () => {
-      return nsqd.emptyTopic(TOPIC).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'TOPIC_NOT_FOUND');
-      });
+      return nsqd.emptyTopic(TOPIC).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'TOPIC_NOT_FOUND');
+        }
+      );
     });
 
     it('can create a topic', () => {
@@ -97,21 +103,27 @@ describe('API libs', () => {
     });
 
     it('cannot delete a deleted channel', () => {
-      return nsqd.deleteChannel(TOPIC, CHANNEL).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'CHANNEL_NOT_FOUND');
-      });
+      return nsqd.deleteChannel(TOPIC, CHANNEL).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'CHANNEL_NOT_FOUND');
+        }
+      );
     });
 
     it('cannot empty a deleted channel', () => {
-      return nsqd.emptyChannel(TOPIC, CHANNEL).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'CHANNEL_NOT_FOUND');
-      });
+      return nsqd.emptyChannel(TOPIC, CHANNEL).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'CHANNEL_NOT_FOUND');
+        }
+      );
     });
 
     it('can publish', () => {
@@ -158,12 +170,15 @@ describe('API libs', () => {
     });
 
     it('cannot lookup a wrong topic', () => {
-      return lookupd.lookup(randexp(/\w{8}/)).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'TOPIC_NOT_FOUND');
-      });
+      return lookupd.lookup(randexp(/\w{8}/)).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'TOPIC_NOT_FOUND');
+        }
+      );
     });
 
     it('can list all topics', () => {
@@ -199,12 +214,15 @@ describe('API libs', () => {
     });
 
     it('cannot delete a deleted channel', () => {
-      return lookupd.deleteChannel(TOPIC, CHANNEL).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'CHANNEL_NOT_FOUND');
-      });
+      return lookupd.deleteChannel(TOPIC, CHANNEL).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'CHANNEL_NOT_FOUND');
+        }
+      );
     });
 
     it('can delete a topic', () => {
@@ -212,12 +230,15 @@ describe('API libs', () => {
     });
 
     it('cannot lookup a deleted topic', () => {
-      return lookupd.lookup(TOPIC).then(() => {
-        throw new Error('expected an error');
-      }, (err) => {
-        err.should.have.property('statusCode', 404);
-        err.should.have.property('message', 'TOPIC_NOT_FOUND');
-      });
+      return lookupd.lookup(TOPIC).then(
+        () => {
+          throw new Error('expected an error');
+        },
+        err => {
+          err.should.have.property('statusCode', 404);
+          err.should.have.property('message', 'TOPIC_NOT_FOUND');
+        }
+      );
     });
 
     it('can delete a deleted topic', () => {
@@ -240,7 +261,7 @@ describe('API libs', () => {
     });
 
     it('can list all nodes', () => {
-      return cluster.nodes().then((res) => {
+      return cluster.nodes().then(res => {
         res.should.be.Array().with.length(3);
       });
     });
@@ -250,7 +271,7 @@ describe('API libs', () => {
     });
 
     it('can list all nodes', () => {
-      return cluster.nodes().then((res) => {
+      return cluster.nodes().then(res => {
         res.should.be.Array().with.length(3);
       });
     });

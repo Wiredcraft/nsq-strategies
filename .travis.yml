@@ -14,12 +14,12 @@ env:
     - NSQ_DOCKERS="cluster"
 node_js:
   - "10"
-  - "6"
+  - "8"
 services:
   - docker
 install:
   - yarn
 before_script:
-  - ./dockers/start.sh
+  - ./dockers/up.sh
 script:
   - make test-coveralls

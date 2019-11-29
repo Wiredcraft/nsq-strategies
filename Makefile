@@ -1,11 +1,11 @@
 ENV = NODE_ENV=test
 BIN = ./node_modules/.bin
 TESTS = test/*.test.js
-MOCHA_OPTS = -b --timeout 20000 --reporter spec
+MOCHA_OPTS = -b --timeout 20000 --reporter spec --exit
 
 lint:
 	@echo "Linting..."
-	@$(BIN)/jscs index.js lib test
+	@$(BIN)/eslint . --fix
 test: lint
 	@echo "Testing..."
 	@$(ENV) $(BIN)/_mocha $(MOCHA_OPTS) $(TESTS)
