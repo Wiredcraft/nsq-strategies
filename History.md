@@ -1,4 +1,14 @@
 
+v0.3.0 / 2019-11-29
+==================
+
+  * chore: add more test for invalid param
+  * chore: update npmignore
+  * chore: update readme and CI script
+  * test: add tests for defer publish
+  * fix: deprecated tests
+  * chore: upgrade everything
+
 v0.2.0 / 2019-01-04
 ===================
 
