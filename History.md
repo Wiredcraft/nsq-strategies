@@ -1,4 +1,10 @@
 
+v0.3.2 / 2019-12-15
+==================
+
+  * chore: upgrade dependencies
+  * chore: minor update on code and readme doc
+
 v0.3.1 / 2019-12-11
 ==================
 
