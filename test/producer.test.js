@@ -60,6 +60,26 @@ describe('producer', () => {
     });
   });
 
+  it('should be able to publish to single nsqd with promise style', done => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030
+    });
+    topic = renewTopic();
+    p.connect().then(() => {
+      p.produce(topic, 'test producer')
+        .then(() => {
+          nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout.on('data', data => {
+            if (data.toString().trim()) {
+              expect(data.toString().trim()).to.contain('test producer');
+              done();
+            }
+          });
+        })
+        .catch(done);
+    });
+  });
+
   it('should be able to publish delay msg', done => {
     const p = new Producer({
       nsqdHost: 'localhost',

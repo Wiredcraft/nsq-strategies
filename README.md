@@ -31,7 +31,7 @@ This module preprares some typical strategies for you.
   * `msgs`: NSQ messages, should use array in delay message.
   * `produceOptions`:
     * [`retry`](https://github.com/Wiredcraft/nsq-strategies#produce-retry)
-    * delay: send delay message in given millisecond.
+    * `delay`: send delay message in given millisecond.
 
 #### Round robin strategy
 
@@ -48,8 +48,49 @@ This module preprares some typical strategies for you.
   }, {
     strategy: Producer.ROUND_ROBIN
   });
+
   p.connect((errors) => {
     p.produce('topic', 'message', (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  });
+
+  // with options
+  // enable retry with default node-promise-retry strategy,
+  // send NSQ message with 2-second delay
+  p.connect((errors) => {
+    p.produce('topic', 'message', { retry: true, delay: 2000 }, (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  });
+
+  // with options
+  // enable retry with given node-promise-retry strategy,
+  // send NSQ message with 2-second delay
+  p.connect((errors) => {
+    p.produce('topic', 'message', { retry: {
+      retries: 3,
+      minTimeout: 300
+    }, delay: 2000 }, (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  });
+
+  // with promise style
+  // enable retry with given node-promise-retry strategy,
+  // send NSQ message with 2-second delay
+  p.connect().then(() => {
+    p.produce('topic', 'message', { retry: {
+      retries: 3,
+      minTimeout: 300
+    }, delay: 2000 })
+    .catch(err => {
       if (err) {
         console.log(err);
       }
