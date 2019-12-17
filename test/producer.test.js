@@ -299,6 +299,7 @@ describe('producer', () => {
   describe('reconnect', () => {
     beforeEach(done => {
       removeTopicFromAllNsqd(topic, done);
+      topic = renewTopic();
     });
 
     afterEach(done => {
@@ -306,18 +307,19 @@ describe('producer', () => {
     });
 
     function startNsqd(callback) {
-      spawn('docker-compose', [`--file=${composeFile}`, 'start', 'nsqd3']);
-      const operation = retry.operation({
-        retries: 3,
-        factor: 2,
-        minTimeout: 500
-      });
-      operation.attempt(currentAttemps => {
-        request('http://localhost:9041/ping', (err, res, body) => {
-          if (operation.retry(err)) {
-            return;
-          }
-          callback(err ? operation.mainError() : null);
+      spawn('docker-compose', [`--file=${composeFile}`, 'start', 'nsqd3']).on('close', () => {
+        const operation = retry.operation({
+          retries: 3,
+          factor: 2,
+          minTimeout: 500
+        });
+        operation.attempt(currentAttemps => {
+          request('http://127.0.0.1:9041/ping', (err, res, body) => {
+            if (operation.retry(err)) {
+              return;
+            }
+            callback(err ? operation.mainError() : null);
+          });
         });
       });
     }
