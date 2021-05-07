@@ -336,6 +336,7 @@ describe('producer', () => {
         retries: 3,
         minTimeout: 300
       };
+      const doneOnce = runCount(1, done);
 
       let retryTimes = 0;
       p.connect = () => {
@@ -351,7 +352,7 @@ describe('producer', () => {
       p.produce(topic, 'any message', { retry: retryOpt }, err => {
         expect(err).to.be.exist;
         expect(err.message).to.be.equal(errMsg);
-        done();
+        doneOnce();
       });
     });
 
@@ -365,6 +366,7 @@ describe('producer', () => {
         retries: 3,
         minTimeout: 300
       };
+      const doneOnce = runCount(1, done);
 
       let retryTimes = 0;
       p.connect = () => {
@@ -373,16 +375,17 @@ describe('producer', () => {
           if (retryTimes < 2) {
             reject(new Error(errMsg));
           } else {
+            p.conns = ['abc']; // Add a fake connection to the pool before resovling from connection method
             resolve();
           }
         });
       };
-      p._produce = (topic, msg, options, callback) => {
+      p._produceOnce = (topic, msg, options) => {
         return Promise.resolve();
       };
       p.produce(topic, 'any message', { retry: retryOpt }, err => {
         expect(err).not.to.be.exist;
-        done();
+        doneOnce();
       });
     });
 
@@ -392,24 +395,26 @@ describe('producer', () => {
         tcpPort: 9040
       });
       const errMsg = 'Failed to connect';
-
       let retryTimes = 0;
+      const doneOnce = runCount(1, done);
+
       p.connect = () => {
         return new Promise((resolve, reject) => {
           retryTimes++;
           if (retryTimes < 3) {
             reject(new Error(errMsg));
           } else {
+            p.conns = ['abc']; // Add a fake connection to the pool before resovling from connection method
             resolve();
           }
         });
       };
-      p._produce = (topic, msg, options, callback) => {
+      p._produceOnce = (topic, msg, options) => {
         return Promise.resolve();
       };
       p.produce(topic, 'any message', { retry: true }, err => {
         expect(err).not.to.be.exist;
-        done();
+        doneOnce();
       });
     });
 
