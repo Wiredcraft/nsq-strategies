@@ -418,6 +418,36 @@ describe('producer', () => {
       });
     });
 
+    it('should be able to call connect method only once when option is empty object', done => {
+      const p = new Producer({
+        nsqdHost: 'localhost',
+        tcpPort: 9040
+      });
+      const errMsg = 'Failed to connect';
+      let retryTimes = 0;
+      const doneOnce = runCount(1, done);
+
+      p.connect = () => {
+        return new Promise((resolve, reject) => {
+          retryTimes++;
+          if (retryTimes < 2) {
+            reject(new Error(errMsg));
+          } else {
+            p.conns = ['abc']; // Add a fake connection to the pool before resovling from connection method
+            resolve();
+          }
+        });
+      };
+      p._produceOnce = (topic, msg, options) => {
+        return Promise.resolve();
+      };
+      p.produce(topic, 'any message', err => {
+        expect(err).to.be.exist;
+        expect(err.message).to.be.equal(errMsg);
+        doneOnce();
+      });
+    });
+
     it('should be able to produce after reconnection', done => {
       const p = new Producer({
         nsqdHost: 'localhost',
