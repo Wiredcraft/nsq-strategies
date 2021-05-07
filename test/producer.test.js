@@ -13,6 +13,8 @@ const removeTopicFromAllNsqd = require('./helper').removeTopicFromAllNsqd;
 
 const composeFile = path.resolve(__dirname, '../dockers/cluster/docker-compose.yml');
 
+const Promise = require('bluebird');
+
 const runCount = (c = 1, callback) => {
   let count = 0;
   return err => {
@@ -324,42 +326,90 @@ describe('producer', () => {
       });
     }
 
-    before('stop nsqd', done => {
-      spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', done);
-    });
-
-    after('start nsqd', done => {
-      spawn('docker-compose', [`--file=${composeFile}`, 'restart', 'nsqd3']).on('close', done);
-    });
-
-    it('should raise error when nsqd is gone', done => {
+    it('should raise error when nsqd is down and maximum retries are exhuasted', done => {
       const p = new Producer({
         nsqdHost: 'localhost',
         tcpPort: 9040
       });
-      startNsqd(err => {
-        p.connect(() => {
-          p.produce(topic, 'message before reconnect', err => {
-            if (err) {
-              return done(err);
-            }
-            nsqTail('nsqd3', topic, '0.0.0.0:9030')
-              .stdout.on('data', data => {
-                if (data.toString().trim()) {
-                  expect(data.toString().trim()).to.contain('message before reconnect');
-                }
-              })
-              .on('close', code => {
-                spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', () => {
-                  p.produce(topic, 'message after reconnect', err => {
-                    expect(err.message).to.contain('No connections to nsqd');
-                    p.close();
-                    done();
-                  });
-                });
-              });
-          });
+      const errMsg = 'Failed to connect';
+      const retryOpt = {
+        retries: 3,
+        minTimeout: 300
+      };
+
+      let retryTimes = 0;
+      p.connect = () => {
+        return new Promise((resolve, reject) => {
+          retryTimes++;
+          if (retryTimes < 5) {
+            reject(new Error(errMsg));
+          } else {
+            resolve();
+          }
         });
+      };
+      p.produce(topic, 'any message', { retry: retryOpt }, err => {
+        expect(err).to.be.exist;
+        expect(err.message).to.be.equal(errMsg);
+        done();
+      });
+    });
+
+    it('should be able to produce when nsqd is down and recovered before maximum retries are exhuasted', done => {
+      const p = new Producer({
+        nsqdHost: 'localhost',
+        tcpPort: 9040
+      });
+      const errMsg = 'Failed to connect';
+      const retryOpt = {
+        retries: 3,
+        minTimeout: 300
+      };
+
+      let retryTimes = 0;
+      p.connect = () => {
+        return new Promise((resolve, reject) => {
+          retryTimes++;
+          if (retryTimes < 2) {
+            reject(new Error(errMsg));
+          } else {
+            resolve();
+          }
+        });
+      };
+      p._produce = (topic, msg, options, callback) => {
+        return Promise.resolve();
+      };
+      p.produce(topic, 'any message', { retry: retryOpt }, err => {
+        expect(err).not.to.be.exist;
+        done();
+      });
+    });
+
+    it('should be able to use default retry strategy when option.retry = true', done => {
+      const p = new Producer({
+        nsqdHost: 'localhost',
+        tcpPort: 9040
+      });
+      const errMsg = 'Failed to connect';
+
+      let retryTimes = 0;
+      p.connect = () => {
+        return new Promise((resolve, reject) => {
+          retryTimes++;
+          if (retryTimes < 3) {
+            reject(new Error(errMsg));
+          } else {
+            resolve();
+          }
+        });
+      };
+      p._produce = (topic, msg, options, callback) => {
+        return Promise.resolve();
+      };
+      p.produce(topic, 'any message', { retry: true }, err => {
+        expect(err).not.to.be.exist;
+        done();
       });
     });
 
@@ -368,23 +418,21 @@ describe('producer', () => {
         nsqdHost: 'localhost',
         tcpPort: 9040
       });
-      startNsqd(err => {
-        p.connect(e => {
-          p.produce(topic, 'message before reconnect', err => {
-            if (err) {
-              return done(err);
-            }
-            spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', code => {
-              startNsqd(e => {
-                setTimeout(() => {
-                  // wait to reconnection
-                  p.produce(topic, 'message after reconnect', error => {
-                    expect(error).to.not.exist;
-                    spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']);
-                    done();
-                  });
-                }, 6000); // 1st reconnect after 1 sec, then 2 sec later
-              });
+
+      p.connect(e => {
+        p.produce(topic, 'message before reconnect', err => {
+          if (err) {
+            return done(err);
+          }
+          spawn('docker-compose', [`--file=${composeFile}`, 'stop', 'nsqd3']).on('close', code => {
+            startNsqd(e => {
+              setTimeout(() => {
+                // wait to reconnection
+                p.produce(topic, 'message after reconnect', error => {
+                  expect(error).to.not.exist;
+                  done();
+                });
+              }, 10000); // 1st reconnect after 1 sec, then 2 sec later
             });
           });
         });
