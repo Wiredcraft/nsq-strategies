@@ -174,6 +174,22 @@ describe('producer', () => {
     );
   });
 
+  it('should be called with error if lookup returns no nodes during connect', () => {
+    const p = new Producer({
+      lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011'] // non-existed lookupd
+    });
+    p.lookupdCluster.nodes = () => Promise.resolve([]);
+    return p.connect().then(
+      () => {
+        throw new Error('expected an error');
+      },
+      err => {
+        expect(err).to.exist;
+        expect(err).to.contain('No nsqd nodes are discovered');
+      }
+    );
+  });
+
   it('should be able to receive comman slitted string', done => {
     const p = new Producer({
       lookupdHTTPAddresses: 'localhost:9001,localhost:9011'
