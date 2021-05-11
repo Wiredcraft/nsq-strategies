@@ -1,3 +1,12 @@
+## [0.3.4](https://github.com/Wiredcraft/nsq-strategies/compare/v0.3.3...v0.3.4) (2021-05-11)
+
+
+### Bug Fixes
+
+* prevent infinite loop when all nsqd nodes are down ([c45fddc](https://github.com/Wiredcraft/nsq-strategies/commit/c45fddc431df32078671cdb5b5acccc0557f8529))
+
+
+
 ## [0.3.3](https://github.com/Wiredcraft/nsq-strategies/compare/v0.3.1...v0.3.3) (2021-05-08)
 
 
