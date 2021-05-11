@@ -185,7 +185,7 @@ describe('producer', () => {
       },
       err => {
         expect(err).to.exist;
-        expect(err).to.contain('No nsqd nodes are discovered');
+        expect(err.message).to.contain('No nsqd nodes are discovered');
       }
     );
   });
