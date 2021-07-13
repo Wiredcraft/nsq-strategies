@@ -36,7 +36,7 @@ This module preprares some typical strategies for you.
 #### Round robin strategy
 
 1. The producer discovers the nsqd nodes from lookupd
-2. Every `produce` picks up a single nsqd in round-robin way and sends the message.
+2. Every `producer` picks up a single nsqd in round-robin way and sends the message.
 3. The round-robin doesn't care about which topic to be sent.
 
 * Example
@@ -115,7 +115,7 @@ This module preprares some typical strategies for you.
                              |
                       +------+------+                        
                       |             |                        
-                      |  Prroducer  |                        
+                      |  Producer   |                        
                       |             |                        
                       +-+----+----+-+                        
                         |    |    |                          
@@ -133,7 +133,7 @@ This module preprares some typical strategies for you.
 #### Fanout strategy
 
 1. The producer discovers the nsqd nodes from lookupd
-2. Every `produce` spreads the message to all nsqd nodes.
+2. Every `producer` spreads the message to all nsqd nodes.
 3. This stategy is mainly for delivery guarantee, it's **not** designed for pub-sub mode in nsq,
 note the message is duplicated among the nsqds, if you have a consumer(client) listening to it's topic, it will get the same message multiple times,
 if this is not expected you have to de-dupe in the consumer side or make the operation for the message idempotent.
@@ -174,7 +174,7 @@ if this is not expected you have to de-dupe in the consumer side or make the ope
                              |
                       +------+------+                        
                       |             |                        
-                      |  Prroducer  |                        
+                      |  Producer   |                        
                       |             |                        
                       +-+----+----+-+                        
                         |    |    |                          
