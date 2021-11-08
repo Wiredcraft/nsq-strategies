@@ -32,6 +32,8 @@ This module preprares some typical strategies for you.
   * `produceOptions`:
     * [`retry`](https://github.com/Wiredcraft/nsq-strategies#produce-retry)
     * `delay`: send delay message in given millisecond.
+    * `strategy`: `Producer.ROUND_ROBIN` | `Producer.FAN_OUT` (default: `Producer.ROUND_ROBIN`)
+    * `maxFanoutNodes`: the maximum nodes with FAN_OUT strategy(ignored if the strategy is not FAN_OUT)
 
 #### Round robin strategy
 
