@@ -1,3 +1,17 @@
+# [1.0.0](https://github.com/Wiredcraft/nsq-strategies/compare/v0.3.4...v1.0.0) (2021-11-09)
+
+
+### Bug Fixes
+
+* avoid index out of bounds issue ([1eea9c2](https://github.com/Wiredcraft/nsq-strategies/commit/1eea9c286508d405317f3577ee94b616133a11b1))
+
+
+### Features
+
+* support strategy for producing ([24df9a8](https://github.com/Wiredcraft/nsq-strategies/commit/24df9a8c3d1bc1eaf6ea5056876eb272b2e4be2b))
+
+
+
 ## [0.3.4](https://github.com/Wiredcraft/nsq-strategies/compare/v0.3.3...v0.3.4) (2021-05-11)
 
 
