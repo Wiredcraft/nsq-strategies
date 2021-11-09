@@ -6,6 +6,7 @@ const randexp = require('randexp').randexp;
 const request = require('request');
 const retry = require('retry');
 const path = require('path');
+const sinon = require('sinon');
 
 const Producer = require('../index').Producer;
 const nsqTail = require('./helper').nsqTail;
@@ -279,6 +280,7 @@ describe('producer', () => {
     it('should be able to publish', done => {
       const lookupdAddr = ['localhost:9001', 'localhost:9011'];
       const opt = { strategy: Producer.ROUND_ROBIN };
+      topic = renewTopic();
       Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
         expect(e).to.be.not.exist;
         p.produce(topic, 'some message', err => {
@@ -302,6 +304,7 @@ describe('producer', () => {
     it('should be able to publish twice', done => {
       const lookupdAddr = ['localhost:9001', 'localhost:9011'];
       const opt = { strategy: Producer.ROUND_ROBIN };
+      topic = renewTopic();
       Producer.singleton({ lookupdHTTPAddresses: lookupdAddr }, opt, (e, p) => {
         p.produce(topic, 'some message', err => {
           expect(err).to.be.not.exist;
@@ -657,6 +660,60 @@ describe('producer', () => {
             expect(err).to.be.exist;
             expect(err.message).to.contain('not supported');
             done();
+          });
+        });
+      });
+      it('should able to override the strategy when producing', done => {
+        const p = new Producer(
+          {
+            lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+          },
+          { strategy: Producer.ROUND_ROBIN }
+        );
+        p.connect((conErr, conns) => {
+          const stubs = conns.map(c => {
+            return sinon.stub(c, 'publish').callsFake((_topic, _msg, cb) => {
+              cb();
+            });
+          });
+          p.produce(topic, 'any message', { strategy: Producer.FAN_OUT }, err => {
+            expect(err).to.be.not.exist;
+            stubs.forEach(s => {
+              expect(s.calledOnce).to.be.true;
+            });
+            stubs.map(s => {
+              s.reset();
+            });
+            done();
+          });
+        });
+      });
+      it('should able to specify the max nodes when fanout', done => {
+        const p = new Producer(
+          {
+            lookupdHTTPAddresses: ['localhost:9001', 'localhost:9011']
+          },
+          { strategy: Producer.ROUND_ROBIN }
+        );
+        p.connect((conErr, conns) => {
+          const stubs = conns.map(c => {
+            return sinon.stub(c, 'publish').callsFake((_topic, _msg, cb) => {
+              cb();
+            });
+          });
+          p.produce(topic, 'any message', { strategy: Producer.FAN_OUT, maxFanoutNodes: 2 }, err => {
+            p.produce(topic, 'any message', { strategy: Producer.FAN_OUT, maxFanoutNodes: 2 }, err => {
+              expect(err).to.be.not.exist;
+              const callCounts = stubs.map(s => {
+                return s.callCount;
+              });
+              const calledTwice = callCounts.filter(c => c === 2);
+              expect(calledTwice).to.have.lengthOf(1);
+
+              const calledOnce = callCounts.filter(c => c === 1);
+              expect(calledOnce).to.have.lengthOf(2);
+              done();
+            });
           });
         });
       });

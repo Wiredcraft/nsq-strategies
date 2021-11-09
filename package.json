@@ -48,7 +48,8 @@
     "randexp": "0.5.3",
     "request": "2.88.0",
     "retry": "0.12.0",
-    "should": "13.2.3"
+    "should": "13.2.3",
+    "sinon": "^12.0.1"
   },
   "husky": {
     "hooks": {
