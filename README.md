@@ -18,7 +18,7 @@ This module preprares some typical strategies for you.
 ## Usage
 
 ### new Producer(connectConfig, option)
-* `connecConfig`:
+* `connectConfig`:
   It can be specified with an array of nsqlookupd addresses or a single nsqd.
 
 * `option`:
