@@ -1,10 +1,11 @@
-'use strict';
+import { Reader } from 'nsqjs';
+import dbg from 'debug';
+const debug = dbg('nsq-strategies:lib:consumer');
+import { toArray } from './utils';
 
-const nsq = require('nsqjs');
-const debug = require('debug')('nsq-strategies:lib:consumer');
-const { toArray } = require('./utils');
-
-class Consumer {
+export class Consumer {
+  private reader: Reader;
+  private opt: any;
   constructor(topic, channel, options) {
     options = options || {};
     if (options.autoConnect == null) {
@@ -15,7 +16,7 @@ class Consumer {
       options.lookupdHTTPAddresses = toArray(options.lookupdHTTPAddresses);
     }
     this.opt = options;
-    this.reader = new nsq.Reader(topic, channel, options);
+    this.reader = new Reader(topic, channel, options);
     if (this.opt.autoConnect) {
       this.reader.connect();
     }
@@ -29,7 +30,7 @@ class Consumer {
   }
 
   consume(fn) {
-    this.reader.on('message', msg => {
+    this.reader.on('message', (msg) => {
       debug(msg);
       fn(msg);
     });
@@ -39,4 +40,3 @@ class Consumer {
     this.reader.close();
   }
 }
-module.exports = Consumer;

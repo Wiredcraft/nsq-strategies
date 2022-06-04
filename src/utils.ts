@@ -1,12 +1,10 @@
-'use strict';
-
-exports.toArray = function(str) {
-  return str.split(',').map(address => {
+export function toArray(str: string) {
+  return str.split(',').map((address) => {
     return address.trim();
   });
-};
+}
 
-exports.partialPickWithIndex = function(n, startIndex, arr) {
+export function partialPickWithIndex(n: number, startIndex: number, arr: string[]) {
   const result = [];
   if (n > arr.length) {
     n = arr.length;
@@ -19,4 +17,4 @@ exports.partialPickWithIndex = function(n, startIndex, arr) {
     result.push(arr[idx]);
   }
   return result;
-};
+}
