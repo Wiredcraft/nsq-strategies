@@ -1,7 +1,8 @@
-import { Reader } from 'nsqjs';
+import { Reader, Message } from 'nsqjs';
 import dbg from 'debug';
 const debug = dbg('nsq-strategies:lib:consumer');
 import { toArray } from './utils';
+import { Observable } from 'rxjs';
 
 export class Consumer {
   private reader: Reader;
@@ -29,10 +30,24 @@ export class Consumer {
     this.reader.connect();
   }
 
-  consume(fn) {
-    this.reader.on('message', (msg) => {
+  consume(fn: (m: Message) => Promise<void> | void) {
+    this.reader.on('message', (msg: Message) => {
       debug(msg);
       fn(msg);
+    });
+  }
+
+  toRx(event = 'message'): Observable<Message> {
+    return new Observable<Message>((subscriber) => {
+      this.reader.on(event, (msg) => {
+        subscriber.next(msg);
+      });
+      this.reader.on('nsqd_closed', () => {
+        subscriber.complete();
+      });
+      this.reader.on('error', (err) => {
+        subscriber.error(err);
+      });
     });
   }
 
