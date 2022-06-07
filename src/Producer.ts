@@ -1,16 +1,35 @@
-'use strict';
+import * as util from 'util';
+import { Writer } from 'nsqjs';
+import promiseRetry from 'promise-retry';
+import dbg from 'debug';
+const debug = dbg('nsq-strategies:lib:producer');
 
-const nsq = require('nsqjs');
-const Promise = require('bluebird');
-const promiseRetry = require('promise-retry');
-const debug = require('debug')('nsq-strategies:lib:producer');
+import { LookupdCluster } from './api';
+import { partialPickWithIndex } from './utils';
 
-const lib = require('./');
-const { partialPickWithIndex } = require('./utils');
-const LookupdCluster = lib.api.LookupdCluster;
+export enum PRODUCER_STRATEGY {
+  ROUND_ROBIN = 'round_robin',
+  FAN_OUT = 'fan_out',
+}
 
-class Producer {
-  constructor(config, options) {
+export interface ProduceOptions {
+  strategy?: PRODUCER_STRATEGY;
+  retry?: any;
+  delay?: number;
+  maxFanoutNodes?: number;
+}
+type ProducerCtorOptions = Pick<ProduceOptions, 'strategy'>;
+
+export class Producer {
+  private opts: any;
+  private nsqd: { host: string; port: string };
+  private lookupdCluster: LookupdCluster;
+  private counter: number;
+  private conns: Array<Writer>;
+  private strategy: PRODUCER_STRATEGY;
+  private _closed: boolean;
+
+  constructor(config, options?: ProducerCtorOptions) {
     this.opts = options || {};
     if (config.tcpPort) {
       config.nsqdHost = config.nsqdHost || 'localhost';
@@ -20,36 +39,29 @@ class Producer {
     if (config.lookupdHTTPAddresses) {
       this.lookupdCluster = new LookupdCluster(config.lookupdHTTPAddresses);
       this.counter = 0;
-      this.strategy = (options && options.strategy) || Producer.ROUND_ROBIN;
+      this.strategy = (options && options.strategy) || PRODUCER_STRATEGY.ROUND_ROBIN;
     }
   }
 
-  connect(callback) {
+  async connect() {
     this.conns = [];
     this._closed = false;
     if (this.lookupdCluster) {
-      return this.lookupdCluster
-        .nodes()
-        .then(nodes => {
-          if (nodes.length == 0) {
-            return Promise.reject(new Error('No nsqd nodes are discovered from the configured lookupd addresses'));
-          } else {
-            return Promise.map(nodes, node => {
-              return this.connectNsqd(node.broadcast_address, node.tcp_port, this.opts);
-            }).then(() => {
-              return this.conns;
-            });
-          }
+      const nodes = await this.lookupdCluster.nodes();
+      if (nodes.length == 0) {
+        return Promise.reject(new Error('No nsqd nodes are discovered from the configured lookupd addresses'));
+      }
+      await Promise.all(
+        nodes.map((node) => {
+          return this.connectNsqd(node.broadcast_address, node.tcp_port, this.opts);
         })
-        .asCallback(callback);
+      );
+      return this.conns;
     }
 
     // connect directly
-    return this.connectNsqd(this.nsqd.host, this.nsqd.port, this.opts)
-      .then(() => {
-        return this.conns;
-      })
-      .asCallback(callback);
+    await this.connectNsqd(this.nsqd.host, this.nsqd.port, this.opts);
+    return this.conns;
   }
 
   /**
@@ -60,7 +72,9 @@ class Producer {
   connectNsqd(host, port, options) {
     return new Promise((resolve, reject) => {
       let isReady = false;
-      const writer = Promise.promisifyAll(new nsq.Writer(host, port, options));
+      const writer = new Writer(host, port, options);
+      writer.deferPublishAsync = util.promisify(writer.deferPublish).bind(writer);
+      writer.publishAsync = util.promisify(writer.publish).bind(writer);
       writer.connect();
       writer.on('error', reject);
       writer.on('ready', () => {
@@ -97,31 +111,22 @@ class Producer {
     // TODO should be able to specify the retry strategy
     promiseRetry((retry, number) => {
       debug('connect attempts %d', number);
-      return this.connectNsqd(host, port, options).catch(err => {
+      return this.connectNsqd(host, port, options).catch((err) => {
         debug('retry when err: ' + err);
         retry(err);
       });
     });
   }
 
-  produce(topic, msg, options = {}, callback) {
-    if (typeof options === 'function') {
-      callback = options;
-      options = {};
-    }
-
+  async produce(topic, msg, options: ProduceOptions = {}) {
     // When all connections are closed manually by calling Producer.close() method, simply reject with error.
     if (this._closed) {
-      return Promise.reject(
-        new Error('All nsqd connections are closed now, call connect method to reconnect to them')
-      ).asCallback(callback);
+      return Promise.reject(new Error('All nsqd connections are closed now, call connect method to reconnect to them'));
     }
 
     const strategy = options.strategy || this.strategy;
-    if (options.retry && strategy === Producer.FAN_OUT) {
-      return Promise.reject(new Error('Retry on produce level is not supported in fanout strategy')).asCallback(
-        callback
-      );
+    if (options.retry && strategy === PRODUCER_STRATEGY.FAN_OUT) {
+      return Promise.reject(new Error('Retry on produce level is not supported in fanout strategy'));
     }
 
     if (!this.conns || this.conns.length === 0) {
@@ -129,39 +134,31 @@ class Producer {
       // Will follow the same retry strategy as specifed from the input parameter.
       if (options.retry) {
         return Promise.resolve(
-          promiseRetry(options.retry === true ? {} : options.retry, (retry, number) => {
-            debug(`Attempt to reconnect to all nsqd nodes with retry number ${number}...`);
+          promiseRetry(options.retry === true ? {} : options.retry, (retry, num) => {
+            debug(`Attempt to reconnect to all nsqd nodes with retry number ${num}...`);
             return this.connect().catch(retry);
           }).then(() => {
-            return this.produce(topic, msg, options, callback);
+            return this.produce(topic, msg, options);
           })
-        ).asCallback(callback);
+        );
       }
 
       // If no retry at all, simply call connect method once.
       debug(`Attempt to reconnect to all nsqd nodes without any retry...`);
-      return this.connect()
-        .then(() => {
-          return this.produce(topic, msg, options, callback);
-        })
-        .asCallback(callback);
+      return this.connect().then(() => {
+        return this.produce(topic, msg, options);
+      });
     }
 
-    // When there are available nsqd connections.
-    if (options.delay && parseInt(options.delay, 10) > 0) {
-      options.delay = parseInt(options.delay, 10);
-    } else {
-      options.delay = null;
-    }
     if (options.retry) {
       return Promise.resolve(
-        promiseRetry(options.retry === true ? {} : options.retry, (retry, number) => {
-          debug(number);
+        promiseRetry(options.retry === true ? {} : options.retry, (retry, num) => {
+          debug(num);
           return this._produceOnce(topic, msg, options).catch(retry);
         })
-      ).asCallback(callback);
+      );
     }
-    return this._produceOnce(topic, msg, options).asCallback(callback);
+    return this._produceOnce(topic, msg, options);
   }
 
   _produceOnce(topic, msg, options) {
@@ -171,17 +168,17 @@ class Producer {
 
     const strategy = options.strategy || this.strategy;
     switch (strategy) {
-      case Producer.ROUND_ROBIN: {
+      case PRODUCER_STRATEGY.ROUND_ROBIN: {
         const i = this.counter % this.conns.length;
         this.counter++;
         return publish(this.conns[i], topic, msg, options);
       }
-      case Producer.FAN_OUT: {
+      case PRODUCER_STRATEGY.FAN_OUT: {
         const i = this.counter % this.conns.length;
         this.counter++;
         const max = (options && options.maxFanoutNodes) || this.conns.length;
         const cons = partialPickWithIndex(max, i, this.conns);
-        return Promise.map(cons, conn => publish(conn, topic, msg, options));
+        return Promise.all(cons.map((conn) => publish(conn, topic, msg, options)));
       }
       default: {
         return publish(this.conns[0], topic, msg, options);
@@ -194,20 +191,21 @@ class Producer {
       throw new Error('No connections yet');
     }
     this._closed = true;
-    this.conns.forEach(con => {
+    this.conns.forEach((con) => {
       con.close();
     });
     this.conns = [];
   }
-}
 
-function normalizeAddress(addresses) {
-  return addresses.map(address => {
-    if (address.indexOf('http') === 0) {
-      return address;
+  static instance: Producer;
+  public static async singleton(config, opt) {
+    if (!Producer.instance) {
+      Producer.instance = new Producer(config, opt);
+      await Producer.instance.connect();
+      return Producer.instance;
     }
-    return 'http://' + address;
-  });
+    return Producer.instance;
+  }
 }
 
 function indexOfConnection(conns, host, port) {
@@ -219,21 +217,3 @@ function indexOfConnection(conns, host, port) {
   });
   return ret;
 }
-
-let instance;
-
-function singleton(config, opt, cb) {
-  if (!instance) {
-    instance = new Producer(config, opt);
-    instance.connect(err => {
-      cb(err, instance);
-    });
-    return;
-  }
-  cb(null, instance);
-}
-
-Producer.ROUND_ROBIN = 'round_robin';
-Producer.FAN_OUT = 'fan_out';
-Producer.singleton = singleton;
-module.exports = Producer;
