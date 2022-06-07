@@ -30,7 +30,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup Test Environment
-        run: ./dockers/up.up
+        run: ./dockers/up.sh
 
       - name: Test
         run: make test-cov
