@@ -67,3 +67,5 @@ typings/
 # IDE
 .vscode
 .idea
+
+*.temp
