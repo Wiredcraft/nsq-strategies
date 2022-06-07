@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [ master, develop ]
+
+
+jobs:
+  basic:
+    name: Lint and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: "https://registry.npmjs.org"
+          cache: 'yarn'
+
+      - name: Install packages
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Setup Test Environment
+        run: ./dockers/up.sh
+
+      - name: Test
+        run: make test-cov
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage/lcov.info
+
+      - name: Stop Test Environment
+        if: ${{ always() }}
+        run: ./dockers/down.sh
