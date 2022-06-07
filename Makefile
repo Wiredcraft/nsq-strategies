@@ -10,6 +10,6 @@ test: lint
 	@$(ENV) $(BIN)/jest $(TESTS) --detectOpenHandles
 watch:
 	@echo "Watching changes and testing..."
-	@$(ENV) $(BIN)/jest --watch
+	@$(ENV) $(BIN)/jest --watch --detectOpenHandles
 
 .PHONY: lint test watch
