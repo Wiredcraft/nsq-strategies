@@ -1,3 +1,12 @@
+## [2.0.1](https://github.com/Wiredcraft/nsq-strategies/compare/v2.0.0...v2.0.1) (2022-06-07)
+
+
+### Bug Fixes
+
+* missing main in package.json ([451e9e1](https://github.com/Wiredcraft/nsq-strategies/commit/451e9e1fb8530abd1649a58bc52d431098f49d53))
+
+
+
 # [2.0.0](https://github.com/Wiredcraft/nsq-strategies/compare/v1.0.0...v2.0.0) (2022-06-07)
 
 
