@@ -1,6 +1,6 @@
 {
   "name": "nsq-strategies",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A nsq client with typical trategies in node.js",
   "main": "index.js",
   "scripts": {
@@ -17,8 +17,13 @@
     "type": "git",
     "url": "git+https://github.com/Wiredcraft/nsq-strategies.git"
   },
-  "keywords": ["nsq"],
-  "files": ["dist", "!dist/tsconfig.build.tsbuildinfo"],
+  "keywords": [
+    "nsq"
+  ],
+  "files": [
+    "dist",
+    "!dist/tsconfig.build.tsbuildinfo"
+  ],
   "author": "Wiredcraft",
   "license": "MIT",
   "bugs": {

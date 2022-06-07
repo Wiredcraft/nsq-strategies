@@ -1,3 +1,18 @@
+# [2.0.0](https://github.com/Wiredcraft/nsq-strategies/compare/v1.0.0...v2.0.0) (2022-06-07)
+
+
+### Bug Fixes
+
+* typo in README ([6d34c88](https://github.com/Wiredcraft/nsq-strategies/commit/6d34c88f09a44a91d1d0d07abfba79e1c56c83d3))
+
+
+### Features
+
+* replace travis with gh action ([#48](https://github.com/Wiredcraft/nsq-strategies/issues/48)) ([4450584](https://github.com/Wiredcraft/nsq-strategies/commit/4450584734b7c7fe79265448866ca33a4058e0b7))
+* supprot rxjs ([7373879](https://github.com/Wiredcraft/nsq-strategies/commit/737387960a3c851535d40e5a31e1efd005387a4c))
+
+
+
 # [1.0.0](https://github.com/Wiredcraft/nsq-strategies/compare/v0.3.4...v1.0.0) (2021-11-09)
 
 
