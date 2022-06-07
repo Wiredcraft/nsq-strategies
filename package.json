@@ -4,6 +4,9 @@
   "description": "A nsq client with typical trategies in node.js",
   "main": "index.js",
   "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "yarn run build",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "make test",
     "coverage": "istanbul cover _mocha -- test/*.test.js && istanbul check-coverage",
@@ -15,6 +18,7 @@
     "url": "git+https://github.com/Wiredcraft/nsq-strategies.git"
   },
   "keywords": ["nsq"],
+  "files": ["dist", "!dist/tsconfig.build.tsbuildinfo"],
   "author": "Wiredcraft",
   "license": "MIT",
   "bugs": {
@@ -26,6 +30,7 @@
     "debug": "4.1.1",
     "nsqjs": "^0.12.1",
     "promise-retry": "^1.1.1",
+    "rimraf": "^3.0.2",
     "rxjs": "^7.5.5"
   },
   "devDependencies": {
@@ -37,17 +42,16 @@
     "@types/promise-retry": "^1.1.3",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
+    "conventional-changelog": "^3.1.25",
     "coveralls": "3.0.9",
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
     "husky": "^3.1.0",
-    "istanbul": "^0.4.5",
     "jest": "^28.1.0",
     "prettier": "^2.3.2",
     "randexp": "0.5.3",
     "retry": "0.12.0",
-    "should": "13.2.3",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",
     "ts-jest": "^28.0.3",
