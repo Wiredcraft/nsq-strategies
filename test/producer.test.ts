@@ -48,6 +48,7 @@ describe('producer', () => {
     });
     topic = randTopic();
     await p.connect();
+    // have to wrap in array: see https://github.com/Wiredcraft/nsq-strategies/pull/24
     await p.produce(topic, ['test delay'], { delay: 2000 });
     p.close();
     const stdout = fromEvent(nsqTail('nsqd2', topic, '0.0.0.0:9030').stdout, 'data');
