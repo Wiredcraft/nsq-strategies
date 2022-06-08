@@ -18,13 +18,8 @@
     "type": "git",
     "url": "git+https://github.com/Wiredcraft/nsq-strategies.git"
   },
-  "keywords": [
-    "nsq"
-  ],
-  "files": [
-    "dist",
-    "!dist/tsconfig.build.tsbuildinfo"
-  ],
+  "keywords": ["nsq"],
+  "files": ["dist", "!dist/tsconfig.build.tsbuildinfo"],
   "author": "Wiredcraft",
   "license": "MIT",
   "bugs": {
@@ -34,7 +29,7 @@
   "dependencies": {
     "axios": "^0.27.2",
     "debug": "4.1.1",
-    "nsqjs": "^0.12.1",
+    "nsqjs": "^0.13.0",
     "promise-retry": "^1.1.1",
     "rimraf": "^3.0.2",
     "rxjs": "^7.5.5"
