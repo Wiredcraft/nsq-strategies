@@ -136,6 +136,22 @@ describe('Consumer', () => {
     expect(msg.body.toString()).toBe('test observale style');
     c.close();
   });
+
+  it('should be able to subscribe', (done) => {
+    topic = randexp(/Consume-([a-z]{8})/);
+    nsqd.publish(topic, 'test observale style').then(() => {
+      const c = new Consumer(topic, 'ipsum', {
+        lookupdHTTPAddresses,
+      });
+      const source$ = c.toRx();
+      source$.subscribe((msg) => {
+        expect(msg.body.toString()).toBe('test observale style');
+        c.close();
+        done();
+      });
+    });
+  });
+
   it('should be able to close the observable', (done) => {
     topic = randexp(/Consume-([a-z]{8})/);
     nsqd.publish(topic, 'test observale style').then(() => {
