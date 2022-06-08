@@ -1,3 +1,12 @@
+## [2.0.2](https://github.com/Wiredcraft/nsq-strategies/compare/v2.0.1...v2.0.2) (2022-06-08)
+
+
+### Bug Fixes
+
+* export apis ([0eda175](https://github.com/Wiredcraft/nsq-strategies/commit/0eda17569e10d4cbbcb7f7d3d00853c8a9a97e42))
+
+
+
 ## [2.0.1](https://github.com/Wiredcraft/nsq-strategies/compare/v2.0.0...v2.0.1) (2022-06-07)
 
 
