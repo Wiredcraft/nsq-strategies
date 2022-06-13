@@ -4,11 +4,23 @@ const debug = dbg('nsq-strategies:lib:consumer');
 import { toArray } from './utils';
 import { Observable } from 'rxjs';
 
+import { MockConsumer, getMock, applyMixins } from './mock';
 export class Consumer {
   private reader: Reader;
   private opt: any;
-  constructor(topic, channel, options) {
+  private topic: string;
+  private channel: string;
+  constructor(topic, channel, options, flag: { fromStaticFactory?: boolean } = {}) {
     options = options || {};
+    if (getMock()) {
+      if (!flag.fromStaticFactory) {
+        return Consumer.createMockInstance(topic, channel, options);
+      }
+      this.topic = topic;
+      this.channel = channel;
+      return;
+    }
+
     if (options.autoConnect == null) {
       // default is true
       options.autoConnect = true;
@@ -53,5 +65,9 @@ export class Consumer {
 
   close() {
     this.reader.close();
+  }
+  static createMockInstance(topic, channel, options) {
+    applyMixins(Consumer, [MockConsumer]);
+    return new Consumer(topic, channel, options, { fromStaticFactory: true });
   }
 }

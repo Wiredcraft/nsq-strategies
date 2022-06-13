@@ -6,6 +6,7 @@ const debug = dbg('nsq-strategies:lib:producer');
 
 import { LookupdCluster } from './api';
 import { partialPickWithIndex } from './utils';
+import { MockProducer, getMock, applyMixins } from './mock';
 
 export enum PRODUCER_STRATEGY {
   ROUND_ROBIN = 'round_robin',
@@ -29,7 +30,10 @@ export class Producer {
   private strategy: PRODUCER_STRATEGY;
   private _closed: boolean;
 
-  constructor(config, options?: ProducerCtorOptions) {
+  constructor(config, options?: ProducerCtorOptions, flag: { fromStaticFactory?: boolean } = {}) {
+    if (getMock() && !flag.fromStaticFactory) {
+      return Producer.createMockInstance(config, options);
+    }
     this.opts = options || {};
     if (config.tcpPort) {
       config.nsqdHost = config.nsqdHost || 'localhost';
@@ -205,6 +209,12 @@ export class Producer {
       return Producer.instance;
     }
     return Producer.instance;
+  }
+
+  public static isMock: boolean;
+  static createMockInstance(config, options?: ProducerCtorOptions) {
+    applyMixins(Producer, [MockProducer]);
+    return new Producer(config, options, { fromStaticFactory: true });
   }
 }
 
