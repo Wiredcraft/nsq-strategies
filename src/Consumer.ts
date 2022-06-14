@@ -10,10 +10,10 @@ export class Consumer {
   private opt: any;
   private topic: string;
   private channel: string;
-  constructor(topic, channel, options, flag: { fromStaticFactory?: boolean } = {}) {
+  constructor(topic, channel, options, { fromStaticFactory = false } = {}) {
     options = options || {};
     if (getMock()) {
-      if (!flag.fromStaticFactory) {
+      if (!fromStaticFactory) {
         return Consumer.createMockInstance(topic, channel, options);
       }
       this.topic = topic;

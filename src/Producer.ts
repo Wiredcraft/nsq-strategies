@@ -30,8 +30,8 @@ export class Producer {
   private strategy: PRODUCER_STRATEGY;
   private _closed: boolean;
 
-  constructor(config, options?: ProducerCtorOptions, flag: { fromStaticFactory?: boolean } = {}) {
-    if (getMock() && !flag.fromStaticFactory) {
+  constructor(config, options?: ProducerCtorOptions, { fromStaticFactory = false } = {}) {
+    if (getMock() && !fromStaticFactory) {
       return Producer.createMockInstance(config, options);
     }
     this.opts = options || {};
@@ -211,7 +211,6 @@ export class Producer {
     return Producer.instance;
   }
 
-  public static isMock: boolean;
   static createMockInstance(config, options?: ProducerCtorOptions) {
     applyMixins(Producer, [MockProducer]);
     return new Producer(config, options, { fromStaticFactory: true });
