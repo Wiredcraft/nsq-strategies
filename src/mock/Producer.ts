@@ -14,7 +14,7 @@ export class MockProducer {
 
   // eslint-disable-next-line  @typescript-eslint/no-unused-vars
   async produce(topic, msg, options: ProduceOptions = {}) {
-    const mockMsg = new MockMessage(msg);
+    const mockMsg = new MockMessage(msg, topic);
     publish(topic, mockMsg);
   }
 

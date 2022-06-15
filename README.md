@@ -247,7 +247,7 @@ This library provides a fake simplistic in-memory queue with exact the same inte
   import { Producer, Consumer, setMock } from 'nsq-strategies';
 
   // CAVEAT: the setMock should be prior to the creation of Producer/Consumer
-  setMokc(true);
+  setMock(true);
 
 
   const p = new Producer({

@@ -1,7 +1,12 @@
+import { publish } from './index';
+
 export class MockMessage {
   private _body: string;
+  private _topic: string;
+  private _attempts = 0;
 
-  constructor(msg) {
+  constructor(msg, topic) {
+    this._topic = topic;
     if (typeof msg === 'string') {
       this._body = msg;
       return;
@@ -14,6 +19,12 @@ export class MockMessage {
     return Buffer.from(this._body, 'utf-8');
   }
 
+  get attempts(): number {
+    return this._attempts;
+  }
+  incrAttempts() {
+    this._attempts += 1;
+  }
   json() {
     return JSON.parse(this._body);
   }
@@ -26,7 +37,9 @@ export class MockMessage {
     // do nothing
   }
 
-  requeue() {
-    // do nothing
+  requeue(delay = 0) {
+    setTimeout(() => {
+      publish(this._topic, this);
+    }, delay);
   }
 }

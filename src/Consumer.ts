@@ -18,6 +18,7 @@ export class Consumer {
       }
       this.topic = topic;
       this.channel = channel;
+      this.opt = options;
       return;
     }
 

@@ -20,8 +20,10 @@ const runCount = (c = 1, callback) => {
 };
 
 describe('mock', () => {
-  it('should be able to call the consumer callback', (done) => {
+  beforeEach(() => {
     setMock(true);
+  });
+  it('should be able to call the consumer callback', (done) => {
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -39,7 +41,6 @@ describe('mock', () => {
     });
   });
   it('should be able to multi-cast', (done) => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -66,7 +67,6 @@ describe('mock', () => {
     });
   });
   it('should be able to uni-cast', (done) => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -93,7 +93,6 @@ describe('mock', () => {
     });
   });
   it('should be able to receive the msg even if the consumer setup comes later', (done) => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -112,7 +111,6 @@ describe('mock', () => {
     });
   });
   it('should be able to use the consumer as observable', async () => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -128,7 +126,6 @@ describe('mock', () => {
     expect(msg.toString().trim()).toContain('test producer');
   });
   it('should be able to call msg methods like finish, requeue', async () => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -147,7 +144,6 @@ describe('mock', () => {
   });
 
   it('should be able to call msg json method', async () => {
-    setMock(true);
     const p = new Producer({
       nsqdHost: 'localhost',
       tcpPort: 9030,
@@ -164,5 +160,78 @@ describe('mock', () => {
     expect(Buffer.isBuffer(msg.body)).toBe(true);
     msg.finish();
     msg.requeue();
+  });
+  it('should be able to requeue', (done) => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030,
+    });
+    topic = randTopic();
+    const c = new Consumer(topic, 'ipsum', {
+      nsqdTCPAddresses: ['localhost:9030'],
+    });
+    const runTwice = runCount(2, done);
+    let cnt = 0;
+
+    c.consume((msg) => {
+      expect(msg.toString().trim()).toContain('test producer');
+      if (cnt < 1) {
+        cnt++;
+        msg.requeue();
+        runTwice(null);
+      } else {
+        runTwice(null);
+      }
+    });
+    p.connect().then(() => {
+      p.produce(topic, 'test producer');
+    });
+  });
+  it('should trigger discard handler', (done) => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030,
+    });
+    topic = randTopic();
+    const c = new Consumer(topic, 'ipsum', {
+      nsqdTCPAddresses: ['localhost:9030'],
+      maxAttempts: 2,
+    });
+
+    c.consume((msg) => {
+      expect(msg.toString().trim()).toContain('test discard');
+      msg.requeue();
+    });
+    c.toRx('discard').subscribe((m) => {
+      expect(m.toString().trim()).toContain('test discard');
+      done();
+    });
+    p.connect().then(() => {
+      p.produce(topic, 'test discard');
+    });
+  });
+
+  it('should trigger discard handler for requeue in observable', (done) => {
+    const p = new Producer({
+      nsqdHost: 'localhost',
+      tcpPort: 9030,
+    });
+    topic = randTopic();
+    const c = new Consumer(topic, 'ipsum', {
+      nsqdTCPAddresses: ['localhost:9030'],
+      maxAttempts: 2,
+    });
+    c.toRx().subscribe((msg) => {
+      expect(msg.toString().trim()).toContain('test discard');
+      msg.requeue();
+    });
+
+    c.toRx('discard').subscribe((m) => {
+      expect(m.toString().trim()).toContain('test discard');
+      done();
+    });
+    p.connect().then(() => {
+      p.produce(topic, 'test discard');
+    });
   });
 });

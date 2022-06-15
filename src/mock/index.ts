@@ -6,29 +6,27 @@ type MsgHandler = consumerCallback | Subject<Message>;
 
 let isMock: boolean;
 
-// { topic01: [ ch01, ch02 ] }
+// { topic01: [ channel01, channel02 ] }
 const channels = new Map<string, Array<string>>();
 
-// { tpoic01-channel01: [ fn1, fn2 ] }
-const callbackHandlers = new Map<string, Array<MsgHandler>>();
+// { topic01-channel01: [ fn1, fn2 ] }
+const messageHandlers = new Map<string, Array<MsgHandler>>();
 
 // { topic01: [ msg1, msg2 ] }
 const stackMsgQueue = new Map<string, Array<any>>();
 
 export function setMock(m: boolean) {
   isMock = m;
-  channels.clear();
-  callbackHandlers.clear();
-  stackMsgQueue.clear();
+  [channels, messageHandlers, stackMsgQueue].map((m) => m.clear());
 }
 export function getMock() {
   return isMock;
 }
 
-function getCallbackHandlers(topic: string) {
+function selectHandlers(topic: string) {
   const chs = channels.get(topic) || [];
   const hdlrs = chs.map((ch) => {
-    const handlers = callbackHandlers.get(`${topic}-${ch}`);
+    const handlers = messageHandlers.get(`${topic}-${ch}`);
     if (handlers.length > 0) {
       return handlers[0];
     }
@@ -38,7 +36,7 @@ function getCallbackHandlers(topic: string) {
 }
 
 export function publish(topic: string, msg: Message) {
-  const handlers = getCallbackHandlers(topic);
+  const handlers = selectHandlers(topic);
 
   if (handlers && handlers.length > 0) {
     handlers.forEach((h) => {
@@ -58,14 +56,14 @@ export function hook(topic: string, channel: string, handler: MsgHandler) {
     channels.set(topic, chnls);
   }
   const channelKey = `${topic}-${channel}`;
-  let handlers = callbackHandlers.get(channelKey);
+  let handlers = messageHandlers.get(channelKey);
 
   if (!handlers) {
     handlers = [];
     drain(topic, handler);
   }
   handlers.push(handler);
-  callbackHandlers.set(channelKey, handlers);
+  messageHandlers.set(channelKey, handlers);
 }
 
 function drain(topic: string, handler: MsgHandler) {
