@@ -237,6 +237,35 @@ await p.produce(topic, 'message', opt, );
 * forever: Whether to retry forever, defaults to false.
 * refer [retry](https://www.npmjs.com/package/retry#api) for more options.
 
+## Testing fixture for nsq
+
+Testing with message queue is not easy, of course you can test your codes with a booted nsq clusters with dockers like [this](https://github.com/Wiredcraft/nsq-strategies/blob/bede44d8dd05b1418e3b473ca96c08e7ae142630/dockers/up.sh#L13-L14), but you should focus on your business logic instead of the nsq itself.
+This library provides a fake simplistic in-memory queue with exact the same interfaces of the Producer/Consumer for your testing convenience.
+
+```ts
+
+  import { Producer, Consumer, setMock } from 'nsq-strategies';
+
+  // CAVEAT: the setMock should be prior to the creation of Producer/Consumer
+  setMock(true);
+
+
+  const p = new Producer({
+    lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+  });
+  await p.connect();
+  await p.produce('topic', 'message');
+
+  // The message sent by the producer above will flow to the same topic of consumers
+  const c = new Consumer('topic', 'channel', {
+      lookupdHTTPAddresses: ['127.0.0.1:9011', '127.0.0.1:9012']
+  });
+  const consumer$ = c.toRx();
+  consumer$.subscribe((msg) => console.log(msg.toString()));
+
+```
+
+
 ## Migration from v1
 A few major changes from v1.x
 * We moved to TypeScript.
