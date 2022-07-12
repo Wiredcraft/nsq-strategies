@@ -1,3 +1,13 @@
+# [2.1.0](https://github.com/Wiredcraft/nsq-strategies/compare/v2.0.2...v2.1.0) (2022-07-12)
+
+
+### Features
+
+* mocks for testing ([72147fe](https://github.com/Wiredcraft/nsq-strategies/commit/72147fe4701653cea437b2e5b24f9ce569c78dcd))
+* support requeue for mock ([bb4b755](https://github.com/Wiredcraft/nsq-strategies/commit/bb4b755069a86a0aa705fd4d1144637bd4e594ac))
+
+
+
 ## [2.0.2](https://github.com/Wiredcraft/nsq-strategies/compare/v2.0.1...v2.0.2) (2022-06-08)
 
 
